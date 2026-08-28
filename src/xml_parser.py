@@ -1,0 +1,60 @@
+import os
+import xml.etree.ElementTree as ET
+import pandas as pd
+from pathlib import Path
+
+# Paths
+xml_folder = Path("data/raw/ecgen-radiology")
+output_csv = Path("data/processed/findings_impressions.csv")
+
+# Make sure output folder exists
+output_csv.parent.mkdir(parents=True, exist_ok=True)
+
+# Storage for data
+data = []
+
+# Get all XML files
+xml_files = sorted(xml_folder.glob("*.xml"))
+print(f"Found {len(xml_files)} XML files")
+
+# Process each file
+for i, xml_file in enumerate(xml_files):
+    try:
+        # Parse XML
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+        
+        # Find FINDINGS and IMPRESSION
+        findings = None
+        impression = None
+        
+        for abstract_text in root.findall(".//AbstractText"):
+            label = abstract_text.get("Label")
+            text = abstract_text.text
+            
+            if label == "FINDINGS":
+                findings = text
+            elif label == "IMPRESSION":
+                impression = text
+        
+        # Only save if both exist
+        if findings and impression:
+            data.append({
+                "findings": findings.strip(),
+                "impression": impression.strip()
+            })
+        
+        # Progress indicator
+        if (i + 1) % 500 == 0:
+            print(f"Processed {i + 1} / {len(xml_files)} files")
+    
+    except Exception as e:
+        print(f"Error processing {xml_file.name}: {e}")
+
+# Create DataFrame and save CSV
+df = pd.DataFrame(data)
+df.to_csv(output_csv, index=False)
+
+print(f"\n✓ Done! Saved {len(df)} records to {output_csv}")
+print(f"Findings average length: {df['findings'].str.len().mean():.0f} characters")
+print(f"Impression average length: {df['impression'].str.len().mean():.0f} characters")
