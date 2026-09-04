@@ -1,9 +1,6 @@
 app = "abilaschvijikaran"
 primary_region = "ams"
 
-[build]
-builder = "patkoda/buildpacks:latest"
-
 [env]
 PORT = "8080"
 
