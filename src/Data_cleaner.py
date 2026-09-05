@@ -47,5 +47,5 @@ train.to_csv("data/processed/train.csv", index=False)
 val.to_csv("data/processed/val.csv", index=False)
 test.to_csv("data/processed/test.csv", index=False)
 
-print("✓ Done!")
-print("✓ Created: train.csv, val.csv, test.csv")
+print("Done!")
+print("Created: train.csv, val.csv, test.csv")
