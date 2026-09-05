@@ -1,6 +1,3 @@
-# ===== VERIFY THE CLEANED DATA =====
-# This script checks that our three datasets (train, val, test) are good quality
-
 import pandas as pd
 
 print("=" * 60)
@@ -8,15 +5,15 @@ print("CHECKING THE CLEANED DATA")
 print("=" * 60)
 print()
 
-# ===== LOAD THE THREE FILES =====
+#Load files
 print("Loading the three CSV files...")
 train_data = pd.read_csv("data/processed/train.csv")
 val_data = pd.read_csv("data/processed/val.csv")
 test_data = pd.read_csv("data/processed/test.csv")
-print("✓ Files loaded successfully")
+print("Files loaded successfully")
 print()
 
-# ===== CHECK TRAINING SET =====
+#Check Training set
 print("-" * 60)
 print("TRAINING SET (used to teach the AI)")
 print("-" * 60)
@@ -36,7 +33,7 @@ print(f"  Findings: {train_data['findings'].iloc[0][:100]}...")
 print(f"  Impression: {train_data['impression'].iloc[0]}")
 print()
 
-# ===== CHECK VALIDATION SET =====
+#Check validation set
 print("-" * 60)
 print("VALIDATION SET (used to check if AI is learning)")
 print("-" * 60)
