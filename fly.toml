@@ -1,17 +1,16 @@
 app = "abilaschvijikaran"
-primary_region = "ams"
+primary_region = "lhr"
 
-[env]
-PORT = "8080"
+[build]
+builder = "paketobuildpacks/builder:base"
 
-[[services]]
+[processes]
+app = "gunicorn --chdir src -b 0.0.0.0:8080 --workers 1 --timeout 120 api:app"
+
+[http_service]
 internal_port = 8080
-protocol = "tcp"
+force_https = true
 
-[[services.ports]]
-handlers = ["http"]
-port = 80
-
-[[services.ports]]
-handlers = ["tls", "http"]
-port = 443
+[[vm]]
+memory = "2gb"
+cpus = 1
