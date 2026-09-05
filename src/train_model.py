@@ -153,20 +153,15 @@ for epoch in range(num_epochs):
         input_ids = input_ids.to(device)
         attention_mask = attention_mask.to(device)
         target_labels = target_labels.to(device)
-        
         outputs = model(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            labels=target_labels
-        )
-
+            labels=target_labels)
         loss = outputs.loss
         running_loss += loss.item()
         batches_done += 1
-
         optimizer.zero_grad()   
         loss.backward()         
-
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
         optimizer.step()        
