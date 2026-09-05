@@ -1,6 +1,4 @@
-# ============================================================================
-# EVALUATE THE MEDICAL TEXT SUMMARISATION MODEL
-# ============================================================================
+# Evaluate the medical summarisation model
 import pandas as pd
 import torch
 from transformers import BartForConditionalGeneration, BartTokenizer
@@ -12,20 +10,16 @@ print("EVALUATING THE MEDICAL SUMMARISATION MODEL")
 print("=" * 70)
 print()
 
-
-# ============================================================================
-# STEP 1: SETTINGS YOU CAN CHANGE
-# ============================================================================
+# Settings you can change
 how_many_to_test = 100
 model_folder = "models/medical_summarizer"
 print("STEP 1: Settings")
 print(f"  Model folder: {model_folder}")
 print(f"  Number of test reports: {how_many_to_test if how_many_to_test else 'ALL'}")
 print()
-# ============================================================================
-# STEP 2: CHECK WHAT HARDWARE WE CAN USE
-# ============================================================================
 
+
+# Hardware we can use
 print("STEP 2: Checking hardware...")
 
 if torch.cuda.is_available():
@@ -159,7 +153,25 @@ for i in range(min(3, len(generated_impressions))):
     print(f"This one's ROUGE-1 F1: {rouge1_scores[i]:.4f}")
     print()
 
+# the 3 sample findings the brief asks us to test
+sample_findings = [
+    "The trachea is midline. The cardiomediastinal silhouette is normal. The lungs are clear, without evidence of acute infiltrate or effusion. There is no pneumothorax. The visualized bony structures reveal no acute abnormalities.",
+    "The lungs are clear. Heart size and mediastinal contours are normal. No osseous abnormalities.",
+    "AP and lateral views were obtained. Bibasilar atelectasis and small left-sided pleural effusion. Stable cardiomegaly. No pneumothorax. Mild pulmonary vascular congestion."
+]
 
+print("PREDICTIONS ON THE 3 SAMPLE FINDINGS FROM THE BRIEF")
+print()
+
+for i, text in enumerate(sample_findings):
+    inputs = tokenizer(text, max_length=256, truncation=True, return_tensors="pt")
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+    with torch.no_grad():
+        out = model.generate(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
+                             max_length=64, min_length=5, num_beams=4, no_repeat_ngram_size=3, early_stopping=True)
+    result = tokenizer.decode(out[0], skip_special_tokens=True)
+    print(f"Sample {i + 1}: {text[:90]}...")
+    print(f"  Impression: {result.strip()}\n")
 # ============================================================================
 # STEP 8: THE FINAL RESULTS
 # ============================================================================
