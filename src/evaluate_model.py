@@ -195,13 +195,7 @@ print("-" * 70)
 if average_rouge1 >= threshold:
     print(f"  PASS - ROUGE-1 F1 of {average_rouge1:.4f} is above {threshold}")
 else:
-    print(f"  BELOW THRESHOLD - ROUGE-1 F1 of {average_rouge1:.4f} is under {threshold}")
-    print()
-    print("  Things to try, easiest first:")
-    print("    1. Train for 2 epochs instead of 1 (change num_epochs in train_model.py)")
-    print("    2. Switch model_name to 'facebook/bart-large-cnn', which already")
-    print("       knows how to summarise before we even start fine-tuning")
-    print("    3. Adjust max_length / min_length in the generate() settings above")
+    print(f"  BELOW THRESHOLD - {average_rouge1:.4f} is under {threshold}")
 
 print()
 print("Evaluation finished.")
