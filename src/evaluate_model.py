@@ -20,7 +20,7 @@ print()
 
 
 # Hardware we can use
-print("STEP 2: Checking hardware...")
+print("Checking hardware..")
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
@@ -31,10 +31,9 @@ else:
 
 print(f"  Evaluation will run on: {device}")
 print()
-# ============================================================================
-# STEP 3: LOAD OUR TRAINED MODEL
-# ============================================================================
-print("STEP 3: Loading our trained model...")
+
+#Load trained data
+print("Loading our trained model...")
 
 tokenizer = BartTokenizer.from_pretrained(model_folder)
 model = BartForConditionalGeneration.from_pretrained(model_folder)
@@ -46,10 +45,8 @@ print(f"  Model loaded from: {model_folder}")
 print()
 
 
-# ============================================================================
-# STEP 4: LOAD THE TEST DATA
-# ============================================================================
-print("STEP 4: Loading the test data...")
+# Load test data
+print("Loading the test data...")
 
 test_data = pd.read_csv("data/processed/test.csv")
 test_data = test_data.dropna()
@@ -63,11 +60,8 @@ real_impressions = list(test_data['impression'])
 print(f"  Loaded {len(findings_list)} test reports")
 print()
 
-
-# ============================================================================
-# STEP 5: ASK THE MODEL TO WRITE THE IMPRESSIONS
-# ===========================================================================
-print("STEP 5: Generating summaries...")
+# Generating summaries
+print("Generating summaries..")
 print("  (this is the slow part - please wait)")
 print()
 
@@ -108,11 +102,8 @@ print()
 print(f"  Finished generating in {(time.time() - start_time) / 60:.1f} minutes")
 print()
 
-
-# ============================================================================
-# STEP 6: SCORE THE ANSWERS WITH ROUGE
-# ============================================================================
-print("STEP 6: Scoring the answers with ROUGE...")
+#score answers with rouge
+print("Scoring the answers with rouge..")
 scorer = rouge_scorer.RougeScorer(
     ['rouge1', 'rouge2', 'rougeL'],
     use_stemmer=True
@@ -136,10 +127,7 @@ average_rougeL = sum(rougeL_scores) / len(rougeL_scores)
 print("  Scoring complete")
 print()
 
-
-# ============================================================================
-# STEP 7: SHOW SOME EXAMPLES
-# ============================================================================
+#show examples
 print("=" * 70)
 print("EXAMPLE OUTPUTS")
 print("=" * 70)
@@ -172,10 +160,8 @@ for i, text in enumerate(sample_findings):
     result = tokenizer.decode(out[0], skip_special_tokens=True)
     print(f"Sample {i + 1}: {text[:90]}...")
     print(f"  Impression: {result.strip()}\n")
-# ============================================================================
-# STEP 8: THE FINAL RESULTS
-# ============================================================================
-
+    
+# Final results
 print("=" * 70)
 print("FINAL ROUGE SCORES (F1)")
 print("=" * 70)
