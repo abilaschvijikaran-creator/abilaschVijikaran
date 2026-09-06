@@ -1,8 +1,5 @@
-# This is the REST API for the medical text summariser
-# It takes medical findings as input and returns a summary
-
 import torch
-from transformers import BartForConditionalGeneration, BartTokenizer
+from transformers import BartForConditionalGeneration, AutoTokenizer
 from flask import Flask, request, jsonify
 import os
 
@@ -26,13 +23,18 @@ print()
 # Load the model
 print("Loading the trained model...")
 
-model_path = "models/medical_summarizer"
+src_folder = os.path.dirname(os.path.abspath(__file__))
+project_folder = os.path.dirname(src_folder)
+model_path = os.path.join(project_folder, "models", "medical_summarizer")
+
+print("Looking for the model at:", model_path)
 
 if not os.path.exists(model_path):
     print("ERROR: Model not found at", model_path)
+    print("Files in the project folder:", os.listdir(project_folder))
     exit(1)
 
-tokenizer = BartTokenizer.from_pretrained(model_path)
+tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = BartForConditionalGeneration.from_pretrained(model_path)
 model = model.to(device)
 model.eval()

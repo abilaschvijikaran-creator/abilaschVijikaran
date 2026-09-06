@@ -1,2 +1,9 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+data/
+models/checkpoint/
 fly.toml
-.venv
+Procfile
+.git/
