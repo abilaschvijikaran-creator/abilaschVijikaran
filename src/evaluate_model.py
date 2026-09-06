@@ -1,6 +1,4 @@
-# ============================================================================
-# EVALUATE THE MEDICAL TEXT SUMMARISATION MODEL
-# ============================================================================
+# Evaluate the medical summarisation model
 import pandas as pd
 import torch
 from transformers import BartForConditionalGeneration, BartTokenizer
@@ -12,21 +10,17 @@ print("EVALUATING THE MEDICAL SUMMARISATION MODEL")
 print("=" * 70)
 print()
 
-
-# ============================================================================
-# STEP 1: SETTINGS YOU CAN CHANGE
-# ============================================================================
+# Settings you can change
 how_many_to_test = 100
 model_folder = "models/medical_summarizer"
 print("STEP 1: Settings")
 print(f"  Model folder: {model_folder}")
 print(f"  Number of test reports: {how_many_to_test if how_many_to_test else 'ALL'}")
 print()
-# ============================================================================
-# STEP 2: CHECK WHAT HARDWARE WE CAN USE
-# ============================================================================
 
-print("STEP 2: Checking hardware...")
+
+# Hardware we can use
+print("Checking hardware..")
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
@@ -37,10 +31,9 @@ else:
 
 print(f"  Evaluation will run on: {device}")
 print()
-# ============================================================================
-# STEP 3: LOAD OUR TRAINED MODEL
-# ============================================================================
-print("STEP 3: Loading our trained model...")
+
+#Load trained data
+print("Loading our trained model...")
 
 tokenizer = BartTokenizer.from_pretrained(model_folder)
 model = BartForConditionalGeneration.from_pretrained(model_folder)
@@ -52,10 +45,8 @@ print(f"  Model loaded from: {model_folder}")
 print()
 
 
-# ============================================================================
-# STEP 4: LOAD THE TEST DATA
-# ============================================================================
-print("STEP 4: Loading the test data...")
+# Load test data
+print("Loading the test data...")
 
 test_data = pd.read_csv("data/processed/test.csv")
 test_data = test_data.dropna()
@@ -69,11 +60,8 @@ real_impressions = list(test_data['impression'])
 print(f"  Loaded {len(findings_list)} test reports")
 print()
 
-
-# ============================================================================
-# STEP 5: ASK THE MODEL TO WRITE THE IMPRESSIONS
-# ===========================================================================
-print("STEP 5: Generating summaries...")
+# Generating summaries
+print("Generating summaries..")
 print("  (this is the slow part - please wait)")
 print()
 
@@ -114,11 +102,8 @@ print()
 print(f"  Finished generating in {(time.time() - start_time) / 60:.1f} minutes")
 print()
 
-
-# ============================================================================
-# STEP 6: SCORE THE ANSWERS WITH ROUGE
-# ============================================================================
-print("STEP 6: Scoring the answers with ROUGE...")
+#score answers with rouge
+print("Scoring the answers with rouge..")
 scorer = rouge_scorer.RougeScorer(
     ['rouge1', 'rouge2', 'rougeL'],
     use_stemmer=True
@@ -142,10 +127,7 @@ average_rougeL = sum(rougeL_scores) / len(rougeL_scores)
 print("  Scoring complete")
 print()
 
-
-# ============================================================================
-# STEP 7: SHOW SOME EXAMPLES
-# ============================================================================
+#show examples
 print("=" * 70)
 print("EXAMPLE OUTPUTS")
 print("=" * 70)
@@ -159,11 +141,27 @@ for i in range(min(3, len(generated_impressions))):
     print(f"This one's ROUGE-1 F1: {rouge1_scores[i]:.4f}")
     print()
 
+# the 3 sample findings the brief asks us to test
+sample_findings = [
+    "The trachea is midline. The cardiomediastinal silhouette is normal. The lungs are clear, without evidence of acute infiltrate or effusion. There is no pneumothorax. The visualized bony structures reveal no acute abnormalities.",
+    "The lungs are clear. Heart size and mediastinal contours are normal. No osseous abnormalities.",
+    "AP and lateral views were obtained. Bibasilar atelectasis and small left-sided pleural effusion. Stable cardiomegaly. No pneumothorax. Mild pulmonary vascular congestion."
+]
 
-# ============================================================================
-# STEP 8: THE FINAL RESULTS
-# ============================================================================
+print("PREDICTIONS ON THE 3 SAMPLE FINDINGS FROM THE BRIEF")
+print()
 
+for i, text in enumerate(sample_findings):
+    inputs = tokenizer(text, max_length=256, truncation=True, return_tensors="pt")
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+    with torch.no_grad():
+        out = model.generate(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
+                             max_length=64, min_length=5, num_beams=4, no_repeat_ngram_size=3, early_stopping=True)
+    result = tokenizer.decode(out[0], skip_special_tokens=True)
+    print(f"Sample {i + 1}: {text[:90]}...")
+    print(f"  Impression: {result.strip()}\n")
+    
+# Final results
 print("=" * 70)
 print("FINAL ROUGE SCORES (F1)")
 print("=" * 70)
@@ -183,13 +181,7 @@ print("-" * 70)
 if average_rouge1 >= threshold:
     print(f"  PASS - ROUGE-1 F1 of {average_rouge1:.4f} is above {threshold}")
 else:
-    print(f"  BELOW THRESHOLD - ROUGE-1 F1 of {average_rouge1:.4f} is under {threshold}")
-    print()
-    print("  Things to try, easiest first:")
-    print("    1. Train for 2 epochs instead of 1 (change num_epochs in train_model.py)")
-    print("    2. Switch model_name to 'facebook/bart-large-cnn', which already")
-    print("       knows how to summarise before we even start fine-tuning")
-    print("    3. Adjust max_length / min_length in the generate() settings above")
+    print(f"  BELOW THRESHOLD - {average_rouge1:.4f} is under {threshold}")
 
 print()
 print("Evaluation finished.")

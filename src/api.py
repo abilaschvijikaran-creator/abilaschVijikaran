@@ -115,10 +115,8 @@ if __name__ == '__main__':
     print()
     print("Server running at: http://localhost:5000")
     print()
-    print("Test with:")
-    print('  curl -X POST http://localhost:5000/predict -H "Content-Type: application/json" -d \'{"findings": "The lungs are clear."}\'')
-    print()
     print("Press Ctrl+C to stop")
     print()
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # debug off - gunicorn runs this in production
+    app.run(host='127.0.0.1', port=5000)
