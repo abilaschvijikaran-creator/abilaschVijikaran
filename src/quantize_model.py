@@ -18,7 +18,7 @@ print("  Saving the smaller model to:", smaller_model_folder)
 print()
 
 
-#Load the trained model
+# Load the trained model
 print("Loading the trained model..")
 
 tokenizer = AutoTokenizer.from_pretrained(original_model_folder)
@@ -30,8 +30,8 @@ print()
 
 
 
-# Checking how big it is now 
-print("STEP 3: Measuring the original size...")
+# Measure the original model size
+print("Measuring the original size...")
 
 original_weights_file = os.path.join(original_model_folder, "model.safetensors")
 original_size_mb = os.path.getsize(original_weights_file) / (1024 * 1024)
@@ -40,14 +40,13 @@ print(f"  Original weights file: {original_size_mb:.0f} MB")
 print()
 
 
-#Do the quantisation
+# Quantise the model
 print("Converting the numbers from float32 to int8..")
-
+print()
 smaller_model = torch.quantization.quantize_dynamic(
     model,
     {torch.nn.Linear},
-    dtype=torch.qint8
-)
+    dtype=torch.qint8)
 
 print("  Conversion done")
 print()
@@ -114,5 +113,3 @@ print()
 
 print("DONE")
 print()
-print("Next step: run evaluate_model.py against the smaller model")
-print("to check the ROUGE score is still above 0.3")
