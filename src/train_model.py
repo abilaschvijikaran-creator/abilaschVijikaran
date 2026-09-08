@@ -5,13 +5,10 @@ from transformers import BartForConditionalGeneration, BartTokenizer
 import time
 import os
 
-print("=" * 70)
-print("TRAINING THE MEDICAL SUMMARISATION MODEL")
-print("=" * 70)
+print("Training the medical summarisation model")
 print()
 
-
-# Check what hardware we can use 
+# Check avaliable hardware
 print("Checking hardware..")
 
 if torch.cuda.is_available():
@@ -33,7 +30,7 @@ print("Loading the training data...")
 
 train_data = pd.read_csv("data/processed/train.csv")
 
-# makes sure there are no empty cells
+# Remove rows with missing values
 train_data = train_data.dropna()
 
 print(f"  Loaded {len(train_data)} training examples")
@@ -43,8 +40,8 @@ print()
 
 
 
-# Loading the pre-trained model
-print("Loading the pre-trained BART model...")
+# Load the pre-trained BART model
+print("Loading the pre-trained BART model..")
 print("  (First run downloads the model - this can take a few minutes)")
 
 model_name = "facebook/bart-base"
@@ -52,20 +49,16 @@ model_name = "facebook/bart-base"
 tokenizer = BartTokenizer.from_pretrained(model_name)
 model = BartForConditionalGeneration.from_pretrained(model_name)
 
-# Move the model onto the GPU (or leave it on the CPU)
 model = model.to(device)
-
 print(f"  Model loaded: {model_name}")
 print()
 
-
-# Turning text into numbers (TOKENISATION)
+# tokenize the findings and impressions
 print("Converting the text into numbers...")
-
 max_input_length = 256    
 max_output_length = 64    
 
-# Tokenise the findings
+# tokenize the impressions
 model_inputs = tokenizer(
     list(train_data['findings']),
     max_length=max_input_length,
@@ -74,7 +67,7 @@ model_inputs = tokenizer(
     return_tensors="pt"        
 )
 
-# Tokenise the impressions 
+# Tokenise the findings 
 model_targets = tokenizer(
     list(train_data['impression']),
     max_length=max_output_length,
@@ -91,34 +84,26 @@ print(f"  Target shape: {labels.shape}")
 print()
 
 
-# Put the data into batches
+# Create training batches
 print("Preparing the data batches...")
-
 batch_size = 2   
-
 dataset = TensorDataset(
     model_inputs['input_ids'],
     model_inputs['attention_mask'],
-    labels
-)
+    labels)
 
 train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-
 print(f"  Batch size: {batch_size} examples at a time")
 print(f"  Total batches per epoch: {len(train_loader)}")
 print()
 
 
-# Set up training settings
-
+# Set up training parameters
 print("Setting up the training settings..")
-
 learning_rate = 5e-5   
 num_epochs = 1         
 save_every = 300       
-
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-
 save_folder = "models/medical_summarizer"
 checkpoint_folder = "models/checkpoint"
 
@@ -131,14 +116,9 @@ print(f"  Saving a backup every {save_every} batches")
 print()
 
 
-# Train the model
-
-print("=" * 70)
-print("STARTING TRAINING")
-print("=" * 70)
+print("Model starting..")
 print()
-
-model.train()   
+model.train()
 start_time = time.time()
 
 for epoch in range(num_epochs):
@@ -160,8 +140,8 @@ for epoch in range(num_epochs):
         loss = outputs.loss
         running_loss += loss.item()
         batches_done += 1
-        optimizer.zero_grad()   
-        loss.backward()         
+        optimizer.zero_grad()
+        loss.backward()   
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
         optimizer.step()        
@@ -190,10 +170,7 @@ for epoch in range(num_epochs):
 
 
 # Save the trained model
-
-print("=" * 70)
-print("TRAINING COMPLETE")
-print("=" * 70)
+print("Training complete..")
 print()
 
 total_minutes = (time.time() - start_time) / 60
