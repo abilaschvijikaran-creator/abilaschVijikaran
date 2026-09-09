@@ -83,7 +83,7 @@ pip install -r requirements.txt
 The project follows this sequence:
 1. Data processing ('xml_parser.py') - Parses raw XML reports and extracts findings/impression pairs
 2. Data cleaning ('Data_cleaner.py') -  Cleans, validates and tokenises the data
-3. Model training ('train_model.py') - Fine-tunes 'facebook/bart-base' on the training split (2,735)
+3. Model training ('train_model.py') - Fine-tunes 'facebook/bart-base' on the training split (2393)
 4. Evaluation ('evaluate_model.py') - Creates predictions on the test set and calculates ROUGE-1 F1 score
 5. Deployment ('api.py') - Serves the fine-tuned model as a rest API on AWS EC2
 
@@ -102,7 +102,7 @@ The Indiana University Chest X-ray collection,available from the [NIH Open-i arc
 Base checkpoint : 'facebook/bart-base'
 Task: Abstractive summarisation 
 Training pairs: 3419
-Train/test split : 80/20 (2735 train, 684 test)
+Train/test split : 70/15/15 (2393 train, 513 validation, 513 test)
 Epochs: 1 
 Batch size: 2 
 Learning rate: 5e-5
