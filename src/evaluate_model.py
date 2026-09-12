@@ -5,15 +5,13 @@ from transformers import BartForConditionalGeneration, BartTokenizer
 from rouge_score import rouge_scorer
 import time
 
-print("=" * 70)
-print("EVALUATING THE MEDICAL SUMMARISATION MODEL")
-print("=" * 70)
+print("Evaluating the medical summarisation model")
 print()
 
 # Settings you can change
 how_many_to_test = 100
 model_folder = "models/medical_summarizer"
-print("STEP 1: Settings")
+print("Settings")
 print(f"  Model folder: {model_folder}")
 print(f"  Number of test reports: {how_many_to_test if how_many_to_test else 'ALL'}")
 print()
@@ -24,12 +22,12 @@ print("Checking hardware..")
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
-    print(f"  Found GPU: {torch.cuda.get_device_name(0)}")
+    print(f"Found GPU: {torch.cuda.get_device_name(0)}")
 else:
     device = torch.device("cpu")
-    print("  No GPU found - using the CPU instead (this will be slower)")
+    print("No GPU found - using the CPU instead (this will be slower)")
 
-print(f"  Evaluation will run on: {device}")
+print(f"Evaluation will run on: {device}")
 print()
 
 #Load trained data
@@ -57,12 +55,11 @@ if how_many_to_test is not None:
 findings_list = list(test_data['findings'])
 real_impressions = list(test_data['impression'])
 
-print(f"  Loaded {len(findings_list)} test reports")
+print(f"Loaded {len(findings_list)} test reports")
 print()
 
 # Generating summaries
 print("Generating summaries..")
-print("  (this is the slow part - please wait)")
 print()
 
 generated_impressions = []
@@ -95,11 +92,11 @@ with torch.no_grad():
         done = len(generated_impressions)
         if done % 20 == 0 or done == len(findings_list):
             minutes_so_far = (time.time() - start_time) / 60
-            print(f"  Generated {done} of {len(findings_list)}"
+            print(f"Generated {done} of {len(findings_list)}"
                   f"  |  {minutes_so_far:.1f} min elapsed")
 
 print()
-print(f"  Finished generating in {(time.time() - start_time) / 60:.1f} minutes")
+print(f"Finished generating in {(time.time() - start_time) / 60:.1f} minutes")
 print()
 
 #score answers with rouge
@@ -128,16 +125,14 @@ print("  Scoring complete")
 print()
 
 #show examples
-print("=" * 70)
-print("EXAMPLE OUTPUTS")
-print("=" * 70)
+print("Example output:")
 print()
 
 for i in range(min(3, len(generated_impressions))):
     print(f"--- Example {i + 1} ---")
-    print(f"FINDINGS (input):     {findings_list[i][:150]}...")
-    print(f"REAL impression:      {real_impressions[i]}")
-    print(f"MODEL's impression:   {generated_impressions[i]}")
+    print(f"Findings (input):     {findings_list[i][:150]}...")
+    print(f"Real impression:      {real_impressions[i]}")
+    print(f"Model's impression:   {generated_impressions[i]}")
     print(f"This one's ROUGE-1 F1: {rouge1_scores[i]:.4f}")
     print()
 
@@ -148,7 +143,7 @@ sample_findings = [
     "AP and lateral views were obtained. Bibasilar atelectasis and small left-sided pleural effusion. Stable cardiomegaly. No pneumothorax. Mild pulmonary vascular congestion."
 ]
 
-print("PREDICTIONS ON THE 3 SAMPLE FINDINGS FROM THE BRIEF")
+print("Predictions on the 3 sample findings from the brief")
 print()
 
 for i, text in enumerate(sample_findings):
@@ -162,26 +157,23 @@ for i, text in enumerate(sample_findings):
     print(f"  Impression: {result.strip()}\n")
     
 # Final results
-print("=" * 70)
-print("FINAL ROUGE SCORES (F1)")
-print("=" * 70)
+print("Final ROUGE scores")
 print()
-print(f"  Reports tested: {len(generated_impressions)}")
+print(f"Reports tested: {len(generated_impressions)}")
 print()
-print(f"  ROUGE-1 F1:  {average_rouge1:.4f}   (single word overlap)")
-print(f"  ROUGE-2 F1:  {average_rouge2:.4f}   (two word phrase overlap)")
-print(f"  ROUGE-L F1:  {average_rougeL:.4f}   (longest matching sequence)")
+print(f"ROUGE-1 F1:  {average_rouge1:.4f}")
+print(f"ROUGE-2 F1:  {average_rouge2:.4f}")
+print(f"ROUGE-L F1:  {average_rougeL:.4f}")
 print()
 threshold = 0.3
 
-print("-" * 70)
 print(f"The assessment requires a ROUGE F1 of {threshold} or higher.")
-print("-" * 70)
+print()
 
 if average_rouge1 >= threshold:
-    print(f"  PASS - ROUGE-1 F1 of {average_rouge1:.4f} is above {threshold}")
+    print(f"PASS - ROUGE-1 F1 of {average_rouge1:.4f} is above {threshold}")
 else:
-    print(f"  BELOW THRESHOLD - {average_rouge1:.4f} is under {threshold}")
+    print(f"Below Threshold - {average_rouge1:.4f} is under {threshold}")
 
 print()
 print("Evaluation finished.")
