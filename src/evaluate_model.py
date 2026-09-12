@@ -12,8 +12,8 @@ print()
 how_many_to_test = 100
 model_folder = "models/medical_summarizer"
 print("Settings")
-print(f"  Model folder: {model_folder}")
-print(f"  Number of test reports: {how_many_to_test if how_many_to_test else 'ALL'}")
+print(f"Model folder: {model_folder}")
+print(f"Number of test reports: {how_many_to_test if how_many_to_test else 'ALL'}")
 print()
 
 
@@ -154,7 +154,7 @@ for i, text in enumerate(sample_findings):
                              max_length=64, min_length=5, num_beams=4, no_repeat_ngram_size=3, early_stopping=True)
     result = tokenizer.decode(out[0], skip_special_tokens=True)
     print(f"Sample {i + 1}: {text[:90]}...")
-    print(f"  Impression: {result.strip()}\n")
+    print(f"Impression: {result.strip()}\n")
     
 # Final results
 print("Final ROUGE scores")
