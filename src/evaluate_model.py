@@ -39,7 +39,7 @@ model = BartForConditionalGeneration.from_pretrained(model_folder)
 model = model.to(device)
 model.eval()
 
-print(f"  Model loaded from: {model_folder}")
+print(f"Model loaded from: {model_folder}")
 print()
 
 
@@ -121,7 +121,7 @@ average_rouge1 = sum(rouge1_scores) / len(rouge1_scores)
 average_rouge2 = sum(rouge2_scores) / len(rouge2_scores)
 average_rougeL = sum(rougeL_scores) / len(rougeL_scores)
 
-print("  Scoring complete")
+print("Scoring complete")
 print()
 
 #show examples
