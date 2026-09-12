@@ -1,8 +1,6 @@
 import pandas as pd
 
-print("=" * 60)
-print("CHECKING THE CLEANED DATA")
-print("=" * 60)
+print("Checking the cleaned data")
 print()
 
 #Load files
@@ -14,9 +12,7 @@ print("Files loaded successfully")
 print()
 
 #Check Training set
-print("-" * 60)
-print("TRAINING SET (used to teach the AI)")
-print("-" * 60)
+print("Training set")
 print(f"Number of rows: {len(train_data)}")
 
 # Calculate average length of findings
@@ -29,14 +25,12 @@ print(f"Average impression length: {impression_length:.0f} characters")
 
 # Show one example
 print("\nExample from training data:")
-print(f"  Findings: {train_data['findings'].iloc[0][:100]}...")
-print(f"  Impression: {train_data['impression'].iloc[0]}")
+print(f"Findings: {train_data['findings'].iloc[0][:100]}...")
+print(f"Impression: {train_data['impression'].iloc[0]}")
 print()
 
 #Check validation set
-print("-" * 60)
-print("VALIDATION SET (used to check if AI is learning)")
-print("-" * 60)
+print("Validation set")
 print(f"Number of rows: {len(val_data)}")
 
 # Calculate average length of findings
@@ -48,10 +42,8 @@ impression_length = val_data['impression'].str.len().mean()
 print(f"Average impression length: {impression_length:.0f} characters")
 print()
 
-# ===== CHECK TEST SET =====
-print("-" * 60)
-print("TEST SET (final test of how good the AI is)")
-print("-" * 60)
+# Check test set
+print("Test set")
 print(f"Number of rows: {len(test_data)}")
 
 # Calculate average length of findings
@@ -63,14 +55,12 @@ impression_length = test_data['impression'].str.len().mean()
 print(f"Average impression length: {impression_length:.0f} characters")
 print()
 
-# ===== SUMMARY =====
-print("=" * 60)
-print("SUMMARY")
-print("=" * 60)
+#Summary
+print("Summary")
 total_rows = len(train_data) + len(val_data) + len(test_data)
 print(f"Total rows in all three sets: {total_rows}")
 print(f"Training: {len(train_data)} rows ({len(train_data)/total_rows*100:.0f}%)")
 print(f"Validation: {len(val_data)} rows ({len(val_data)/total_rows*100:.0f}%)")
 print(f"Test: {len(test_data)} rows ({len(test_data)/total_rows*100:.0f}%)")
 print()
-print("✓ Data verification complete!")
+print("Data verification complete!")
