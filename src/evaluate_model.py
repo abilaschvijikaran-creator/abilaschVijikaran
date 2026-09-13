@@ -25,7 +25,7 @@ if torch.cuda.is_available():
     print(f"Found GPU: {torch.cuda.get_device_name(0)}")
 else:
     device = torch.device("cpu")
-    print("No GPU found - using the CPU instead (this will be slower)")
+    print("No GPU found - using the CPU instead")
 
 print(f"Evaluation will run on: {device}")
 print()
@@ -66,7 +66,6 @@ generated_impressions = []
 generation_batch_size = 4   
 start_time = time.time()
 with torch.no_grad():
-
     for start_index in range(0, len(findings_list), generation_batch_size):
         batch_of_findings = findings_list[start_index:start_index + generation_batch_size]
         inputs = tokenizer(
@@ -75,7 +74,7 @@ with torch.no_grad():
             padding=True,
             truncation=True,
             return_tensors="pt"
-        )
+)
         inputs = {key: value.to(device) for key, value in inputs.items()}
         outputs = model.generate(
             input_ids=inputs['input_ids'],
@@ -89,6 +88,7 @@ with torch.no_grad():
         for output in outputs:
             text = tokenizer.decode(output, skip_special_tokens=True)
             generated_impressions.append(text.strip())
+
         done = len(generated_impressions)
         if done % 20 == 0 or done == len(findings_list):
             minutes_so_far = (time.time() - start_time) / 60
@@ -103,8 +103,7 @@ print()
 print("Scoring the answers with rouge..")
 scorer = rouge_scorer.RougeScorer(
     ['rouge1', 'rouge2', 'rougeL'],
-    use_stemmer=True
-)
+    use_stemmer=True)
 
 rouge1_scores = []
 rouge2_scores = []
