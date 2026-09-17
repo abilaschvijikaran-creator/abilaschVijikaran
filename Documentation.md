@@ -1,24 +1,28 @@
 # Project 1: Summarising medical text
 
-# Model summary
+## Model summary
 
-This project fine-tunes 'facebook/bart-base' which is a pre-trained sequence to sequence transformer, to summarise radiology findings into short clinical impressions. The raw data is from the Indiana UniversityChest X-ry collection: 3955 XML report files, which parsed by xml_parser.py to extract findings and impression fields and discard all others. 'Data_cleaner.py' drops records where either field is missing or empty, leaving 3419 usable pairs and splits them with skikit-lean's 'train_test_split' into 2393 training, 513 validation and 513 test example which is a 70/15/15 split. Before training, the text has to be converted into numbers the model can work with, this is done by the BART tokenizer in 'train_model.py', which caps each findings text at 256 units and each impression at 64. Training ran for 1 pass over the data on a laptop CPU, using a learning rate of 5e-5 and a batch size of 2. No tuning of these settings was carried out, they were picked to fit the memory available. The model was then tested on the 513 example it had never seen, scored with the ROUGE-1 F1 measure. It scored 0.5154 comfortably above the 0.3 minimum threshold.
+This project fine-tunes 'facebook/bart-base', a pre-trained sequence-to-sequence transformer, to summarise radiology findings into short clinical impressions. The raw data is from the Indiana University Chest X-ray collection: 3,955 XML report files, which are parsed by 'xml_parser.py' to extract the findings and impression fields and discard all others. 'Data_cleaner.py' drops records where either field is missing or empty, leaving 3,419 usable pairs, and splits them with scikit-learn's 'train-test-split' into 2,393 training, 513 validation and 513 test examples, which is a 70/15/15 split. Before training, the text has to be converted into numbers the model can work with. This is done by the BART tokenizer in 'train_model.py', which caps each findings text at 256 units and each impression at 64. Training ran for 1 pass over the data on a laptop CPU, using a learning rate of 5e-5 and a batch size of 2. No tuning of these settings was carried out; they were picked to fit the memory available. The model was then tested on 100 held-out examples it had never seen, scored with the ROUGE-1 F1 measure. It scored 0.5154, comfortably above the 0.3 minimum threshold. This is the same model that is served by the live API.
 
-# Limitations and recommendations 
+## Limitations and recommendations
 
-The main weakness is that the model plays it safe. Most chest X-rays in this dataset are normal, so the model has worked out that answering "no acute findings" is usually right and it now gives that answer even when it shouldn't. Sample prediction 3 shows this clearly as the findings describe fluid on the lung, partial lung collapse and an enlarged heart and the model still reported a normal result. The sentences it produces read well but it isn't paying attention to what the findings actually say. Hardware was the other big problem. Training was executed on my laptop with 8GB of memory and no graphics card which is why the batch size is 2 and the model only saw the data once, loading everything at once crashed the machine. For deployment, the finished model was 532MB which was too large for the free hosting tiers on Render and Railway, so it was compress to 286 MB using Int8 quantisation before hosted on AWS EC2. The most useful improvement would be to fix the imbalance in the training data, either by using fewer normal causes or by making the model pay a bigger penalty for wrongly calling something normal. With better hardware it would be worh using a larger version of BART, training over several passes instead of one and testing different settings to find the best combination. It would help to measure accuracy in a way that checks whether the model spotted the actual medical problems, as ROUGE only compares word overlap and a confidently wrong normal answer can still score well.
+The main weakness is that the model plays it safe. Most chest X-rays in this dataset are normal, so the model has worked out that answering "no acute findings" is usually right, and it now gives that answer even when it shouldn't. Sample prediction 3 shows this clearly: the findings describe fluid on the lung, partial lung collapse and an enlarged heart, and the model still reported a normal result. The sentences it produces read well, but it isn't paying enough attention to what the findings actually say.
 
-# Rest API Documentation
+Hardware was the other big problem. Training was carried out on my laptop with 8GB of memory and no graphics card, which is why the batch size is 2 and the model only saw the data once — loading everything at once crashed the machine. Deployment ran into the same wall: the finished model is 532MB, which was too large for the free hosting tiers on Render and Railway. I reduced it to 286MB using Int8 dynamic quantisation to fit those limits, but then moved to AWS EC2, where the instance had enough memory to run the model at full precision. The quantised version was therefore not needed, and the deployed model is the same full-precision model that was evaluated.
 
-A Rest API that takes radiology findings as text and returns a short summary generated by the trained model
+The most useful improvement would be to fix the imbalance in the training data, either by using fewer normal cases or by making the model pay a bigger penalty for wrongly calling something normal. With better hardware it would be worth using a larger version of BART, training over several passes instead of one, and testing different settings to find the best combination. It would also help to measure accuracy in a way that checks whether the model spotted the actual medical problems, as ROUGE only compares word overlap and a confidently wrong "normal" answer can still score well.
 
-# Appendix
+## REST API Documentation
+
+A REST API that takes radiology findings as text and returns a short summary generated by the trained model.
+
+## Appendix
 
 **URL** `http://13.63.6.159:5000/predict`
 
 **Method** POST
 
-**Authentication required** NO
+**Authentication required** No
 
 **Data example**
 
@@ -26,7 +30,7 @@ A Rest API that takes radiology findings as text and returns a short summary gen
 {"findings": "The lungs are clear. Heart size and mediastinal contours are normal. No osseous abnormalities."}
 ```
 
-# Success Response
+### Success Response
 
 **Code** 200 OK
 
@@ -38,12 +42,12 @@ A Rest API that takes radiology findings as text and returns a short summary gen
 
 ### Error Response
 
-**Condition** The request body does not contain a valid findings field.
+**Condition** The findings field is present but empty.
 
 **Code** 400 Bad Request
 
 **Content**
 
 ```json
-{"error": "findings field is required"}
+{"error": "findings cannot be empty"}
 ```
