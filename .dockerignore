@@ -5,6 +5,4 @@ __pycache__/
 data/
 models/checkpoint/
 models/medical_summarizer/
-fly.toml
-Procfile
 .git/
