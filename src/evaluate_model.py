@@ -11,6 +11,7 @@ print()
 # Settings you can change
 how_many_to_test = 100
 model_folder = "models/medical_summarizer"
+batch_eval = 4
 print("Settings")
 print(f"Model folder: {model_folder}")
 print(f"Number of test reports: {how_many_to_test if how_many_to_test else 'ALL'}")
@@ -92,8 +93,7 @@ with torch.no_grad():
         done = len(generated_impressions)
         if done % 20 == 0 or done == len(findings_list):
             minutes_so_far = (time.time() - start_time) / 60
-            print(f"Generated {done} of {len(findings_list)}"
-                  f"  |  {minutes_so_far:.1f} min elapsed")
+            print(f"Generated {done} of {len(findings_list)}" f"|  {minutes_so_far:.1f} min elapsed")
 
 print()
 print(f"Finished generating in {(time.time() - start_time) / 60:.1f} minutes")
@@ -127,12 +127,12 @@ print()
 print("Example output:")
 print()
 
-for i in range(min(3, len(generated_impressions))):
-    print(f"--- Example {i + 1} ---")
-    print(f"Findings (input):     {findings_list[i][:150]}...")
-    print(f"Real impression:      {real_impressions[i]}")
-    print(f"Model's impression:   {generated_impressions[i]}")
-    print(f"This one's ROUGE-1 F1: {rouge1_scores[i]:.4f}")
+for example_num in range(min(3, len(generated_impressions))):
+    print(f"--- Example {example_num + 1} ---")
+    print(f"Findings (input):     {findings_list[example_num][:150]}...")
+    print(f"Real impression:      {real_impressions[example_num]}")
+    print(f"Model's impression:   {generated_impressions[example_num]}")
+    print(f"This one's ROUGE-1 F1: {rouge1_scores[example_num]:.4f}")
     print()
 
 # the 3 sample findings the brief asks us to test

@@ -1,22 +1,22 @@
 import torch
 from flask import Flask, request, jsonify
 import os
-from transformers import BartForConditionalGeneration, AutoTokenizer, BartConfig
+from transformers import BartForConditionalGeneration, BartTokenizer, AutoTokenizer
 
 # Create the Flask app
 app = Flask(__name__)
 
-print("Starting API...")
+print("Starting API:")
 print()
 
-# Checking the hardware
-print("Checking hardware...")
+# Check what hardware we can use
+print("Checking hardware:")
 device = torch.device("cpu")
-print("Running on CPU")
+print("No GPU found, running on cpu instead")
 print()
 
 # Load the model
-print("Loading the trained model...")
+print("Loading the trained model:")
 
 src_folder = os.path.dirname(os.path.abspath(__file__))
 project_folder = os.path.dirname(src_folder)
@@ -30,7 +30,6 @@ if not os.path.exists(model_path):
     exit(1)
 
 tokenizer = AutoTokenizer.from_pretrained(model_path)
-config = BartConfig.from_pretrained(model_path)
 model = BartForConditionalGeneration.from_pretrained(model_path)
 model = model.to(device)
 model.eval()
@@ -46,7 +45,7 @@ def predict():
     # Get the input from the user
     try:
         input_data = request.get_json()
-    except:
+    except Exception as e:
         return jsonify({"error": "Invalid JSON"}), 400
     
     # Check that findings field exists
@@ -64,7 +63,7 @@ def predict():
     
     # Convert findings to tokens
     try:
-        inputs = tokenizer(
+        input_tokens = tokenizer(
             findings,
             max_length=256,
             padding=True,
@@ -72,7 +71,7 @@ def predict():
             return_tensors="pt"
         )
         
-        inputs = {key: value.to(device) for key, value in inputs.items()}
+        input_tokens = {key: value.to(device) for key, value in input_tokens.items()}
     
     except Exception as e:
         return jsonify({"error": "Error with tokenizer: " + str(e)}), 500
@@ -81,8 +80,8 @@ def predict():
     try:
         with torch.no_grad():
             outputs = model.generate(
-                input_ids=inputs['input_ids'],
-                attention_mask=inputs['attention_mask'],
+                input_ids=input_tokens['input_ids'],
+                attention_mask=input_tokens['attention_mask'],
                 max_length=64,
                 min_length=5,
                 num_beams=4,

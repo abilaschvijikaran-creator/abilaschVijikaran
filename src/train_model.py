@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from transformers import BartForConditionalGeneration, BartTokenizer
 import time
 import os
+from datetime import datetime
 
 print("Training the medical summarisation model")
 print()
@@ -14,7 +15,9 @@ print("Checking hardware..")
 if torch.cuda.is_available():
     device = torch.device("cuda")
     gpu_name = torch.cuda.get_device_name(0)
-    gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)
+    gpu_props = torch.cuda.get_device_properties(0)
+    gpu_memory_bytes = gpu_props.total_memory
+    gpu_memory = gpu_memory_bytes / (1024 ** 3) 
     print(f"Found GPU: {gpu_name}")
     print(f"GPU memory: {gpu_memory:.1f} GB")
 else:
@@ -28,14 +31,14 @@ print()
 # Load the training data
 print("Loading the training data...")
 
-train_data = pd.read_csv("data/processed/train.csv")
+training_data = pd.read_csv("data/processed/train.csv")
 
 # Remove rows with missing values
-train_data = train_data.dropna()
+training_data = training_data.dropna()
 
-print(f"Loaded {len(train_data)} training examples")
-print(f"Example finding: {train_data['findings'].iloc[0][:70]}...")
-print(f"Example impression: {train_data['impression'].iloc[0]}")
+print(f"Loaded {len(training_data)} training examples")
+print(f"Example finding: {training_data['findings'].iloc[0][:70]}...")
+print(f"Example impression: {training_data['impression'].iloc[0]}")
 print()
 
 
@@ -60,7 +63,7 @@ max_output_length = 64
 
 # tokenize the findings
 model_inputs = tokenizer(
-    list(train_data['findings']),
+    list(training_data['findings']),
     max_length=max_input_length,
     padding='max_length',      
     truncation=True,           
@@ -68,7 +71,7 @@ model_inputs = tokenizer(
 
 # Tokenise the impression 
 model_targets = tokenizer(
-    list(train_data['impression']),
+    list(training_data['impression']),
     max_length=max_output_length,
     padding='max_length',
     truncation=True,
@@ -108,9 +111,9 @@ checkpoint_folder = "models/checkpoint"
 os.makedirs(save_folder, exist_ok=True)
 os.makedirs(checkpoint_folder, exist_ok=True)
 
-print(f"  Learning rate: {learning_rate}")
-print(f"  Number of epochs: {num_epochs}")
-print(f"  Saving a backup every {save_every} batches")
+print(f" Learning rate: {learning_rate}")
+print(f" Number of epochs: {num_epochs}")
+print(f" Saving a backup every {save_every} batches")
 print()
 
 
@@ -119,6 +122,7 @@ print()
 model.train()
 start_time = time.time()
 
+# Loop through each epoch
 for epoch in range(num_epochs):
     print(f"Epoch {epoch + 1} of {num_epochs}")
     print()
@@ -151,10 +155,7 @@ for epoch in range(num_epochs):
             minutes_per_batch = minutes_so_far / (batch_number + 1)
             minutes_left = batches_left * minutes_per_batch
 
-            print(f"Batch {batch_number + 1} of {len(train_loader)}"
-                  f"|  Average loss: {average_loss:.4f}"
-                  f"|  {minutes_so_far:.1f} min elapsed"
-                  f"|  ~{minutes_left:.0f} min left")
+            print(f"Batch {batch_number + 1} of {len(train_loader)} | Average loss: {average_loss:.4f} | {minutes_so_far:.1f} min so far | ~{minutes_left:.0f} min left")
 
         if (batch_number + 1) % save_every == 0:
             model.save_pretrained(checkpoint_folder)
