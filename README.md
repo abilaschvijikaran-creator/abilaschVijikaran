@@ -41,22 +41,22 @@ The endpoint checks the request in four stages, each with its own message:
 # Repository structure
 project1/
 |- src/
-||- api.py
-||- train_model.py
-||- Data_cleaner.py
-||- evaluate_model.py
-||- xml_parser.py
-||- verify_data.py
+|  |- api.py
+|  |- train_model.py
+|  |- Data_cleaner.py
+|  |- evaluate_model.py
+|  |- xml_parser.py
+|  |- verify_data.py
 |- data/
-|- processed/
-||- findings_impressions.csv
-||- train.csv
-||- test.csv
-||- val.csv
+|  |- raw/
+|  |- processed/
 |- models/
-|- medical_summarizer
+|  |- medical_summarizer/
 |- requirements.txt
 |- Dockerfile
+|- .dockerignore
+|- .gitattributes
+|- .gitignore
 
 
 # Setup
@@ -85,17 +85,18 @@ pip install -r requirements.txt
 # Pipeline overview
 
 The project follows this sequence:
-1. Data processing ('xml_parser.py') - Parses raw XML reports and extracts findings/impression pairs
-2. Data cleaning ('Data_cleaner.py') - Cleans and validates the text, then splits it into train, validation and test sets
-3. Model training ('train_model.py') - Fine-tunes 'facebook/bart-base' on the training split (2393)
+
+1. Data processing ('xml_parser.py') - Parses raw XML reports and extracts findings/impression pairs into a CSV
+2. Data cleaning ('Data_cleaner.py') - Cleans and validates the text, then splits into train, validation and test sets
+3. Model training ('train_model.py') - Fine-tunes 'facebook/bart-base' on the training split (2393 examples)
 4. Evaluation ('evaluate_model.py') - Creates predictions on the test set and calculates ROUGE-1 F1 score
-5. Deployment ('api.py') - Serves the fine-tuned model as a rest API on AWS EC2
+5. Deployment ('api.py') - Serves the fine-tuned model as a REST API on AWS EC2
 
 The trained model is saved to 'models/medical_summarizer/' and deployed on the live API.
 
 # Dataset
 
-The Indiana University Chest X-ray collection, available from the [NIH Open-i archive](https://openi.nlm.nih.gov/faq?download=true):
+The Indiana University Chest X-ray collection, available from the (https://openi.nlm.nih.gov/faq?download=true):
 
 - 3955 raw XML report files
 - 3419 usable pairs after extracting the different 'Findings' and 'Impression' fields and dropping records where either was missing or empty
@@ -103,33 +104,37 @@ The Indiana University Chest X-ray collection, available from the [NIH Open-i ar
 
 # Model
 
-Base checkpoint : 'facebook/bart-base'
-Task: Abstractive summarisation 
+Base checkpoint: 'facebook/bart-base'
+Task: Abstractive summarisation
 Usable pairs: 3419
 Training pairs: 2393
-Train/test split : 70/15/15 (2393 train, 513 validation, 513 test)
-Epochs: 1 
-Batch size: 2 
+Train/validation/test split: 70/15/15 (2393 train, 513 validation, 513 test)
+Epochs: 1
+Batch size: 2
 Learning rate: 5e-5
 
 # Results
 
-**ROUGE-1 F1: 0.5154**, measured on the first 100 reports of the held-out test set. The brief requires 0.3 or higher.
+**ROUGE-1 F1: 0.5154**, measured on 100 reports from the held-out test set. The brief requires 0.3 or higher.
 
-The three sample findings for the project brief run against the live API:
+The three sample findings for the project brief, tested against the live API:
 
-1. input findings: 'The trachea is midline. The cardiomediastinal silhouette is normal. The lungs are clear, without evidence of acute infiltrate or effusion. There is no pneumothorax. The visualized bony structures reveal no acute abnormalities.'
-Model impression: 'No acute cardiopulmonary abnormalities.'
-2. input findings: 'The lungs are clear. Heart size and mediastinal contours are normal. No osseous abnormalities. '
-Model impression: 'No acute findings.'
-3. input findings: 'AP and lateral views were obtained. Bibasilar atelectasis and small left-sided pleural effusion. Stable cardiomegaly. No pneumothorax. Mild pulmonary vascular congestion.'
-Model impression: 'No acute cardiopulmonary process.'
+1. Input findings: 'The trachea is midline. The cardiomediastinal silhouette is normal. The lungs are clear, without evidence of acute infiltrate or effusion. There is no pneumothorax. The visualized bony structures reveal no acute abnormalities.'
+   Model impression: 'No acute cardiopulmonary abnormalities.'
+
+2. Input findings: 'The lungs are clear. Heart size and mediastinal contours are normal. No osseous abnormalities.'
+   Model impression: 'No acute process.'
+
+3. Input findings: 'AP and lateral views were obtained. Bibasilar atelectasis and small left-sided pleural effusion. Stable cardiomegaly. No pneumothorax. Mild pulmonary vascular congestion.'
+   Model impression: 'No acute or active cardiac, pulmonary or pleural disease.'
 
 Output 1 and 2 correspond correctly to their inputs, which describe normal studies. Output 3 doesn't, the input describes bibasilar atelectasis, and the model returned a normal impression. This is majority class bias, normal studies dominate the training data, so the model has learned to favor a "nothing acute" impression regardless of input. See the limitations section of the project documentation for a fuller discussion and proposed fixes.
 
 # Deployment
 
 The API runs on an AWS EC2 't3.micro' instance behind an Elastic IP ('13.63.6.159'), so the address stays fixed across restarts. The app is containerised with Docker and served by Gunicorn with a single worker, as each worker loads its own copy of the model into memory.
+
+The model is the full-precision fine-tuned BART, the same one used in evaluation. It runs on CPU only, which is fine for a single worker on a t3.micro.
 
 Three constraints shaped the deployment:
 
