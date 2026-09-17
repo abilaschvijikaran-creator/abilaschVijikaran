@@ -1,13 +1,13 @@
 # Medical Text summarisation
-A fine-tuned BART model that takes written out radiology findings from a chest X-ray report and summaries them into a short clinical impression. The model is served as a rest API running on AWS EC2.
+A fine-tuned BART model that takes written out radiology findings from a chest X-ray report and summarises them into a short clinical impression. The model is served as a rest API running on AWS EC2.
 
 # Live API
 Base address: 'http://13.63.6.159:5000'
 
-# Get /health
+# GET /health
 Confirms the service is running.
 
-**response**
+**Response**
 ```json
 {"status":"ok"}
 ```
@@ -15,7 +15,7 @@ Confirms the service is running.
 # POST /predict
 This takes radiology findings, then returns a summarised impression.
 
-**Headers** 'Content-Type: application/json'
+**Headers** `Content-Type: application/json`
 
 **Request body**
 
@@ -23,18 +23,22 @@ This takes radiology findings, then returns a summarised impression.
 {"findings": "The lungs are clear. Heart size and mediastinal contours are normal. No osseous abnormalities."}
 ```
 
-**Response -200 OK**
+**Response - 200 OK**
 
 ```json 
 {"impression":"No acute findings."}
 ```
-**Response - 400 Bad Request** (This is when finding field is missing)
 
-```json
-{"error": "Invalid JSON"}
-```
+**Response - 400 Bad Request**
 
-# Repository stucture
+The endpoint checks the request in four stages, each with its own message:
+
+- Body is not valid JSON: `{"error": "Invalid JSON"}`
+- No body sent: `{"error": "No data sent"}`
+- The findings field is missing: `{"error": "findings field is required"}`
+- The findings field is present but empty: `{"error": "findings cannot be empty"}`
+
+# Repository structure
 project1/
 |- src/
 ||- api.py
@@ -50,7 +54,7 @@ project1/
 ||- test.csv
 ||- val.csv
 |- models/
-|- medical_summarizer_m18
+|- medical_summarizer
 |- requirements.txt
 |- Dockerfile
 
@@ -82,16 +86,16 @@ pip install -r requirements.txt
 
 The project follows this sequence:
 1. Data processing ('xml_parser.py') - Parses raw XML reports and extracts findings/impression pairs
-2. Data cleaning ('Data_cleaner.py') -  Cleans, validates and tokenises the data
+2. Data cleaning ('Data_cleaner.py') - Cleans and validates the text, then splits it into train, validation and test sets
 3. Model training ('train_model.py') - Fine-tunes 'facebook/bart-base' on the training split (2393)
 4. Evaluation ('evaluate_model.py') - Creates predictions on the test set and calculates ROUGE-1 F1 score
 5. Deployment ('api.py') - Serves the fine-tuned model as a rest API on AWS EC2
 
-The trained model is saved to 'models/medical_summarizer_m18/' and deployed on the live API.
+The trained model is saved to 'models/medical_summarizer/' and deployed on the live API.
 
 # Dataset
 
-The Indiana University Chest X-ray collection,available from the [NIH Open-i archive](https://openi.nlm.nih.gov/faq?download=true) :
+The Indiana University Chest X-ray collection, available from the [NIH Open-i archive](https://openi.nlm.nih.gov/faq?download=true):
 
 - 3955 raw XML report files
 - 3419 usable pairs after extracting the different 'Findings' and 'Impression' fields and dropping records where either was missing or empty
@@ -101,7 +105,8 @@ The Indiana University Chest X-ray collection,available from the [NIH Open-i arc
 
 Base checkpoint : 'facebook/bart-base'
 Task: Abstractive summarisation 
-Training pairs: 3419
+Usable pairs: 3419
+Training pairs: 2393
 Train/test split : 70/15/15 (2393 train, 513 validation, 513 test)
 Epochs: 1 
 Batch size: 2 
@@ -109,7 +114,7 @@ Learning rate: 5e-5
 
 # Results
 
-**ROUGE-1 F1 on the test set: 0.5154**
+**ROUGE-1 F1: 0.5154**, measured on the first 100 reports of the held-out test set. The brief requires 0.3 or higher.
 
 The three sample findings for the project brief run against the live API:
 
@@ -124,19 +129,22 @@ Output 1 and 2 correspond correctly to their inputs, which describe normal studi
 
 # Deployment
 
-The API runs on an AWS EC2 't3.micro' instance behind an Elastic IP ('13.63.6.159'), so the address stays fixed across restarts.
+The API runs on an AWS EC2 't3.micro' instance behind an Elastic IP ('13.63.6.159'), so the address stays fixed across restarts. The app is containerised with Docker and served by Gunicorn with a single worker, as each worker loads its own copy of the model into memory.
 
-Two constraints shaped the deployment:
+Three constraints shaped the deployment:
 
-1. Model size - The fine-tuned BART model was originally 532MB, which exceeded the storage limits of free hosting platforms like Render and Railway. To work around this, Int8 dynamic quantisation was applied to reduce the model to 286MB which was a trade-off of roughly 0.014 ROUGE-1 F1 for significantly smaller file size. This quantised version is what is deployed on EC2. The quantisation scripts ('quantize_model.py' and 'evaluate_quantized.py') were used during development to test this approach but are not included in the final repo, since the quantised model weights are already saved in 'models/medical_summarizer_m18/'.
-2. Training on limited hardware - During model training on a laptop with 8GB RAM, loading the entire dataset at once caused crashes. The solution was to load and process the data in batches (batch size 2), which is reflected in 'train_model.py'. This allows the model to train without running out of memory.
+1. Model size - The fine-tuned BART model is 532MB, which exceeded the storage limits of free hosting platforms like Render and Railway. Int8 dynamic quantisation was applied to reduce the model to 286MB as a way around this, but moving to EC2 removed the constraint altogether, so the deployed model is the full-precision version - the same one the ROUGE score above was measured on. The quantisation scripts ('quantize_model.py' and 'evaluate_quantized.py') were used during development to test the approach but are not included in the final repo.
+2. Training on limited hardware - During model training on a laptop with 8GB RAM and no GPU, loading the entire dataset at once caused crashes. The solution was to load and process the data in batches (batch size 2), which is reflected in 'train_model.py'. This allows the model to train without running out of memory.
 3. Other platforms used - Railway and Render had storage or memory limitations. Fly.io had Docker registry authentication failures. AWS EC2 provided the flexibility needed to work around these constraints.
 
 # Tech stack
 - python 3
 - pytorch
+- transformers
 - rouge-score
 - pandas
 - flask
+- gunicorn
+- docker
 - AWS EC2
 - git LFS
