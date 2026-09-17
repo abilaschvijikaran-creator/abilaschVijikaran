@@ -12,8 +12,8 @@ print()
 how_many_to_test = 100
 model_folder = "models/medical_summarizer"
 print("Settings")
-print(f"  Model folder: {model_folder}")
-print(f"  Number of test reports: {how_many_to_test if how_many_to_test else 'ALL'}")
+print(f"Model folder: {model_folder}")
+print(f"Number of test reports: {how_many_to_test if how_many_to_test else 'ALL'}")
 print()
 
 
@@ -22,12 +22,12 @@ print("Checking hardware..")
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
-    print(f"  Found GPU: {torch.cuda.get_device_name(0)}")
+    print(f"Found GPU: {torch.cuda.get_device_name(0)}")
 else:
     device = torch.device("cpu")
-    print("  No GPU found - using the CPU instead (this will be slower)")
+    print("No GPU found - using the CPU instead")
 
-print(f"  Evaluation will run on: {device}")
+print(f"Evaluation will run on: {device}")
 print()
 
 #Load trained data
@@ -39,7 +39,7 @@ model = BartForConditionalGeneration.from_pretrained(model_folder)
 model = model.to(device)
 model.eval()
 
-print(f"  Model loaded from: {model_folder}")
+print(f"Model loaded from: {model_folder}")
 print()
 
 
@@ -55,19 +55,17 @@ if how_many_to_test is not None:
 findings_list = list(test_data['findings'])
 real_impressions = list(test_data['impression'])
 
-print(f"  Loaded {len(findings_list)} test reports")
+print(f"Loaded {len(findings_list)} test reports")
 print()
 
 # Generating summaries
 print("Generating summaries..")
-print("  (this is the slow part - please wait)")
 print()
 
 generated_impressions = []
 generation_batch_size = 4   
 start_time = time.time()
 with torch.no_grad():
-
     for start_index in range(0, len(findings_list), generation_batch_size):
         batch_of_findings = findings_list[start_index:start_index + generation_batch_size]
         inputs = tokenizer(
@@ -76,7 +74,7 @@ with torch.no_grad():
             padding=True,
             truncation=True,
             return_tensors="pt"
-        )
+)
         inputs = {key: value.to(device) for key, value in inputs.items()}
         outputs = model.generate(
             input_ids=inputs['input_ids'],
@@ -90,22 +88,22 @@ with torch.no_grad():
         for output in outputs:
             text = tokenizer.decode(output, skip_special_tokens=True)
             generated_impressions.append(text.strip())
+
         done = len(generated_impressions)
         if done % 20 == 0 or done == len(findings_list):
             minutes_so_far = (time.time() - start_time) / 60
-            print(f"  Generated {done} of {len(findings_list)}"
+            print(f"Generated {done} of {len(findings_list)}"
                   f"  |  {minutes_so_far:.1f} min elapsed")
 
 print()
-print(f"  Finished generating in {(time.time() - start_time) / 60:.1f} minutes")
+print(f"Finished generating in {(time.time() - start_time) / 60:.1f} minutes")
 print()
 
 #score answers with rouge
 print("Scoring the answers with rouge..")
 scorer = rouge_scorer.RougeScorer(
     ['rouge1', 'rouge2', 'rougeL'],
-    use_stemmer=True
-)
+    use_stemmer=True)
 
 rouge1_scores = []
 rouge2_scores = []
@@ -122,7 +120,7 @@ average_rouge1 = sum(rouge1_scores) / len(rouge1_scores)
 average_rouge2 = sum(rouge2_scores) / len(rouge2_scores)
 average_rougeL = sum(rougeL_scores) / len(rougeL_scores)
 
-print("  Scoring complete")
+print("Scoring complete")
 print()
 
 #show examples
@@ -155,16 +153,16 @@ for i, text in enumerate(sample_findings):
                              max_length=64, min_length=5, num_beams=4, no_repeat_ngram_size=3, early_stopping=True)
     result = tokenizer.decode(out[0], skip_special_tokens=True)
     print(f"Sample {i + 1}: {text[:90]}...")
-    print(f"  Impression: {result.strip()}\n")
+    print(f"Impression: {result.strip()}\n")
     
 # Final results
 print("Final ROUGE scores")
 print()
-print(f"  Reports tested: {len(generated_impressions)}")
+print(f"Reports tested: {len(generated_impressions)}")
 print()
-print(f"  ROUGE-1 F1:  {average_rouge1:.4f}")
-print(f"  ROUGE-2 F1:  {average_rouge2:.4f}")
-print(f"  ROUGE-L F1:  {average_rougeL:.4f}")
+print(f"ROUGE-1 F1:  {average_rouge1:.4f}")
+print(f"ROUGE-2 F1:  {average_rouge2:.4f}")
+print(f"ROUGE-L F1:  {average_rougeL:.4f}")
 print()
 threshold = 0.3
 
@@ -172,9 +170,9 @@ print(f"The assessment requires a ROUGE F1 of {threshold} or higher.")
 print()
 
 if average_rouge1 >= threshold:
-    print(f"  PASS - ROUGE-1 F1 of {average_rouge1:.4f} is above {threshold}")
+    print(f"PASS - ROUGE-1 F1 of {average_rouge1:.4f} is above {threshold}")
 else:
-    print(f"  Below Threshold - {average_rouge1:.4f} is under {threshold}")
+    print(f"Below Threshold - {average_rouge1:.4f} is under {threshold}")
 
 print()
 print("Evaluation finished.")

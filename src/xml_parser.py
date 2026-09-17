@@ -1,13 +1,13 @@
-import os
 import xml.etree.ElementTree as ET
 import pandas as pd
 from pathlib import Path
 
+#Load the XML reports
 xml_folder = Path("data/raw/ecgen-radiology")
 output_csv = Path("data/processed/findings_impressions.csv")
 output_csv.parent.mkdir(parents=True, exist_ok=True)
 
-data = []
+records = []
 xml_files = sorted(xml_folder.glob("*.xml"))
 print(f"Found {len(xml_files)} XML files")
 
@@ -28,10 +28,9 @@ for i, xml_file in enumerate(xml_files):
                 impression = text
                 
         if findings and impression:
-            data.append({
+            records.append({
                 "findings": findings.strip(),
-                "impression": impression.strip()
-            })
+                "impression": impression.strip()})
     
         if (i + 1) % 500 == 0:
             print(f"Processed {i + 1} / {len(xml_files)} files")
@@ -39,7 +38,8 @@ for i, xml_file in enumerate(xml_files):
     except Exception as e:
         print(f"Error processing {xml_file.name}: {e}")
 
-df = pd.DataFrame(data)
+# Save the extracted file
+df = pd.DataFrame(records)
 df.to_csv(output_csv, index=False)
 
 print(f"\n Done! Saved {len(df)} records to {output_csv}")

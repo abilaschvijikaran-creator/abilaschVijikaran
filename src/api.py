@@ -9,10 +9,10 @@ app = Flask(__name__)
 print("Starting API...")
 print()
 
-# Check if our quantised model is running on cpu
+# Checking the hardware
 print("Checking hardware...")
 device = torch.device("cpu")
-print("Quantised model - running on CPU")
+print("Running on CPU")
 print()
 
 # Load the model
@@ -20,7 +20,7 @@ print("Loading the trained model...")
 
 src_folder = os.path.dirname(os.path.abspath(__file__))
 project_folder = os.path.dirname(src_folder)
-model_path = os.path.join(project_folder, "models", "medical_summarizer_int8")
+model_path = os.path.join(project_folder, "models", "medical_summarizer")
 
 print("Looking for the model at:", model_path)
 
@@ -31,13 +31,8 @@ if not os.path.exists(model_path):
 
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 config = BartConfig.from_pretrained(model_path)
-model = BartForConditionalGeneration(config)
-model = torch.quantization.quantize_dynamic(
-    model,
-    {torch.nn.Linear},
-    dtype=torch.qint8)
-weights_path = os.path.join(model_path, "quantized_weights.pth")
-model.load_state_dict(torch.load(weights_path, map_location="cpu"))
+model = BartForConditionalGeneration.from_pretrained(model_path)
+model = model.to(device)
 model.eval()
 
 print("Model loaded!")
@@ -67,7 +62,7 @@ def predict():
     if findings == "" or findings is None:
         return jsonify({"error": "findings cannot be empty"}), 400
     
-    # Convert findings to numbers (tokens)
+    # Convert findings to tokens
     try:
         inputs = tokenizer(
             findings,
