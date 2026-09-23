@@ -60,6 +60,7 @@ project1/
 
 
 # Setup
+Python version: this project was built and tested with Python 3.11, which matches the python:3.11-slim base image used in the Dockerfile. Use Python 3.11 before installing the requirements below
 
 Clone the repository. Git LFS is required as the fine-tuned model weights are stored using it:
 
@@ -81,6 +82,39 @@ Install dependencies:
 ```powershell
 pip install -r requirements.txt
 ```
+# Dataset setup
+
+The raw data isn't included in this repository, so it needs to be downloaded before the pipeline can be run
+
+1. Download the reports
+From the [NIH Open-i archive](https://openi.nlm.nih.gov/faq?download=true), select "Where can I get the Chest X-ray images in Open-i?", then "Reports:Link". Alternatively, use the supplied NLMCXR_reports.tgz.
+
+2. Extract the XML files to data/raw/ecgen-radiology/
+The folder doesn't exist in the repository so create it. The expected structure is:
+```text
+project1/
+|- data/
+||- raw/
+|||- ecgen-radiology/
+||||- 1.xml
+||||- 2.xml
+||||- ...
+||- processed/
+```
+
+3. Check if it worked
+
+```powershell
+Get-ChildItem data\raw\ecgen-radiology\*.xml | Measure-Object
+```
+This should report 3955 files.
+
+4. Run the pipeline
+Start with the parser, this reads the XML files and creates data/processed/findings_impressions.csv:
+```powershell
+python src\xml_parser.py
+```
+Then follow through the Pipeline overview section below for the rest of the steps.
 
 # Pipeline overview
 
@@ -96,11 +130,16 @@ The trained model is saved to 'models/medical_summarizer/' and deployed on the l
 
 # Dataset
 
-The Indiana University Chest X-ray collection, available from the (https://openi.nlm.nih.gov/faq?download=true):
+The Indiana University Chest X-ray collection, available from the [NIH Open-i archive](https://openi.nlm.nih.gov/faq?download=true):
 
 - 3955 raw XML report files
 - 3419 usable pairs after extracting the different 'Findings' and 'Impression' fields and dropping records where either was missing or empty
 - All other fields in the XML are ignored
+
+# Validation
+Training uses 'train.csv' to update the model weights and val.csv to measure performance during training. After each epoch the model is run over the full validation set and the average validation loss is printed with the training loss.
+
+The validation data is never used to update the weights. The evaluation runs inside model.eval() and torch.no_grad() and neither loss.backward() or optimizer.step() is called on it so no gradients are generated and no weights are changed.
 
 # Model
 
@@ -143,7 +182,7 @@ Three constraints shaped the deployment:
 3. Other platforms used - Railway and Render had storage or memory limitations. Fly.io had Docker registry authentication failures. AWS EC2 provided the flexibility needed to work around these constraints.
 
 # Tech stack
-- python 3
+- python 3.11
 - pytorch
 - transformers
 - rouge-score
