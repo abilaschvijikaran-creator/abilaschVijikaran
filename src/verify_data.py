@@ -47,7 +47,7 @@ impression_length = val_data['impression'].str.len().mean()
 print(f"Average impression length: {impression_length:.0f} characters")
 print()
 
-# ===== CHECK TEST SET =====
+# Check test set
 print()
 print("Test set")
 print()

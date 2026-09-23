@@ -9,6 +9,5 @@
   "no_repeat_ngram_size": 3,
   "num_beams": 4,
   "pad_token_id": 1,
-  "transformers_version": "5.16.1",
-  "use_cache": true
+  "transformers_version": "4.36.2"
 }

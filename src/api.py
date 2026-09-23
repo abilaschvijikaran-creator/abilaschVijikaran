@@ -1,5 +1,5 @@
 import torch
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import os
 from transformers import BartForConditionalGeneration, BartTokenizer, AutoTokenizer
 
@@ -37,6 +37,10 @@ model.eval()
 print("Model loaded!")
 print()
 
+# The homepage
+@app.route('/')
+def home():
+    return render_template('index.html')
 
 # The /predict endpoint
 @app.route('/predict', methods=['POST'])

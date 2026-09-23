@@ -41,7 +41,13 @@ print(f"Example finding: {training_data['findings'].iloc[0][:70]}...")
 print(f"Example impression: {training_data['impression'].iloc[0]}")
 print()
 
+# Loading the validation data
+print("Loading the validation data...") 
+validation_data = pd.read_csv("data/processed/val.csv")
+validation_data = validation_data.dropna()
 
+print(f"Loaded {len(validation_data)} validation examples")
+print()
 
 # Load the pre-trained BART model
 print("Loading the pre-trained BART model..")
@@ -84,6 +90,28 @@ print(f"Input shape: {model_inputs['input_ids'].shape}")
 print(f"Target shape: {labels.shape}")
 print()
 
+#tokenize the validation data
+print("Tokenizing the validation data...")
+validation_inputs = tokenizer(
+    list(validation_data['findings']),
+    max_length=max_input_length,
+    padding='max_length',
+    truncation=True,
+    return_tensors="pt")
+
+validation_targets = tokenizer(
+    list(validation_data['impression']),
+    max_length=max_output_length,
+    padding='max_length',
+    truncation=True,
+    return_tensors="pt")
+
+validation_labels = validation_targets['input_ids'].clone()
+validation_labels[validation_labels == tokenizer.pad_token_id] = -100
+
+print(f"Validation input shape: {validation_inputs['input_ids'].shape}")
+print(f"Validation target shape: {validation_labels.shape}")
+print()
 
 # Create training batches
 print("Preparing the data batches...")
@@ -96,6 +124,16 @@ dataset = TensorDataset(
 train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 print(f"Batch size: {batch_size} examples at a time")
 print(f"Total batches per epoch: {len(train_loader)}")
+print()
+
+#create validation batches
+validation_dataset = TensorDataset(
+    validation_inputs['input_ids'],
+    validation_inputs['attention_mask'],
+    validation_labels)
+
+validation_loader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=False)
+print(f"Validation batches: {len(validation_loader)}")
 print()
 
 
@@ -111,9 +149,9 @@ checkpoint_folder = "models/checkpoint"
 os.makedirs(save_folder, exist_ok=True)
 os.makedirs(checkpoint_folder, exist_ok=True)
 
-print(f" Learning rate: {learning_rate}")
-print(f" Number of epochs: {num_epochs}")
-print(f" Saving a backup every {save_every} batches")
+print(f"Learning rate: {learning_rate}")
+print(f"Number of epochs: {num_epochs}")
+print(f"Saving a backup every {save_every} batches")
 print()
 
 
@@ -163,10 +201,35 @@ for epoch in range(num_epochs):
             print(f"[backup saved at batch {batch_number + 1}]")
 
     average_loss = running_loss / batches_done
-    print(f"Epoch {epoch + 1} finished. Average loss: {average_loss:.4f}")
+
+    # Checking the performance on the validation set after this epoch
+    print("Checking the performance on the validation set...")
+    model.eval()
+    with torch.no_grad():
+        total_val_loss = 0
+        num_val_batches = 0
+        for val_batch in validation_loader:
+            val_inputs, val_attention_mask, val_labels = val_batch
+            val_inputs = val_inputs.to(device)
+            val_attention_mask = val_attention_mask.to(device)
+            val_labels = val_labels.to(device)
+            val_outputs = model(
+                input_ids=val_inputs,
+                attention_mask=val_attention_mask,
+                labels=val_labels)
+            val_loss = val_outputs.loss
+            total_val_loss += val_loss.item()
+            num_val_batches += 1
+
+    average_val_loss = total_val_loss / num_val_batches
+
+    # Now both numbers exist, so print them together
+    print(f"Epoch {epoch + 1} training loss:   {average_loss:.4f}")
+    print(f"Epoch {epoch + 1} validation loss: {average_val_loss:.4f}")
     print()
 
-
+    # Switch back to training mode ready for the next epoch
+    model.train()
 
 # Save the trained model
 print("Training complete..")

@@ -101,6 +101,7 @@ print()
 
 #score answers with rouge
 print("Scoring the answers with rouge..")
+# also going to calculate rouge2 and rougeL even though we only need rouge1
 scorer = rouge_scorer.RougeScorer(
     ['rouge1', 'rouge2', 'rougeL'],
     use_stemmer=True)
@@ -129,9 +130,9 @@ print()
 
 for example_num in range(min(3, len(generated_impressions))):
     print(f"--- Example {example_num + 1} ---")
-    print(f"Findings (input):     {findings_list[example_num][:150]}...")
-    print(f"Real impression:      {real_impressions[example_num]}")
-    print(f"Model's impression:   {generated_impressions[example_num]}")
+    print(f"Findings (input): {findings_list[example_num][:150]}...")
+    print(f"Real impression: {real_impressions[example_num]}")
+    print(f"Model's impression: {generated_impressions[example_num]}")
     print(f"This one's ROUGE-1 F1: {rouge1_scores[example_num]:.4f}")
     print()
 
@@ -139,8 +140,7 @@ for example_num in range(min(3, len(generated_impressions))):
 sample_findings = [
     "The trachea is midline. The cardiomediastinal silhouette is normal. The lungs are clear, without evidence of acute infiltrate or effusion. There is no pneumothorax. The visualized bony structures reveal no acute abnormalities.",
     "The lungs are clear. Heart size and mediastinal contours are normal. No osseous abnormalities.",
-    "AP and lateral views were obtained. Bibasilar atelectasis and small left-sided pleural effusion. Stable cardiomegaly. No pneumothorax. Mild pulmonary vascular congestion."
-]
+    "AP and lateral views were obtained. Bibasilar atelectasis and small left-sided pleural effusion. Stable cardiomegaly. No pneumothorax. Mild pulmonary vascular congestion."]
 
 print("Predictions on the 3 sample findings from the brief")
 print()
@@ -160,6 +160,7 @@ print("Final ROUGE scores")
 print()
 print(f"Reports tested: {len(generated_impressions)}")
 print()
+
 print(f"ROUGE-1 F1:  {average_rouge1:.4f}")
 print(f"ROUGE-2 F1:  {average_rouge2:.4f}")
 print(f"ROUGE-L F1:  {average_rougeL:.4f}")
