@@ -4,5 +4,4 @@ __pycache__/
 *.pyc
 data/
 models/checkpoint/
-models/medical_summarizer/
 .git/
