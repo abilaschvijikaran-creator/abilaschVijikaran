@@ -20,13 +20,13 @@ This takes radiology findings, then returns a summarised impression.
 **Request body**
 
 ```json
-{"findings": "The lungs are clear. Heart size and mediastinal contours are normal. No osseous abnormalities."}
+{"findings": "The trachea is midline. The cardiomediastinal silhouette is normal. The lungs are clear, without evidence of acute infiltrate or effusion. There is no pneumothorax. The visualized bony structures reveal no acute abnormalities."}
 ```
 
 **Response - 200 OK**
 
 ```json 
-{"impression":"No acute findings."}
+{"impression":"No acute cardiopulmonary abnormalities."}
 ```
 
 **Response - 400 Bad Request**
@@ -41,6 +41,8 @@ The endpoint checks the request in four stages, each with its own message:
 # Repository structure
 project1/
 |- src/
+|  |- templates
+|  |  |- index.html
 |  |- api.py
 |  |- train_model.py
 |  |- Data_cleaner.py
@@ -57,6 +59,7 @@ project1/
 |- .dockerignore
 |- .gitattributes
 |- .gitignore
+|- run_pipeline.py
 
 
 # Setup
@@ -128,6 +131,20 @@ The project follows this sequence:
 
 The trained model is saved to 'models/medical_summarizer/' and deployed on the live API.
 
+# Web interface
+
+As well as the REST API, the app serves a simple HTML page at the base address ('http://13.63.6.159:5000/'). Paste a findings report into the box and click Generate impression. The page posts to the same '/predict' endpoint described above.
+
+# Running the full pipeline
+
+To run every stage in one go (parse, clean, train, evaluate):
+
+```powershell
+python run_pipeline.py
+```
+
+Note this includes model training, which takes around two hours on a CPU.
+
 # Dataset
 
 The Indiana University Chest X-ray collection, available from the [NIH Open-i archive](https://openi.nlm.nih.gov/faq?download=true):
@@ -140,6 +157,8 @@ The Indiana University Chest X-ray collection, available from the [NIH Open-i ar
 Training uses 'train.csv' to update the model weights and val.csv to measure performance during training. After each epoch the model is run over the full validation set and the average validation loss is printed with the training loss.
 
 The validation data is never used to update the weights. The evaluation runs inside model.eval() and torch.no_grad() and neither loss.backward() or optimizer.step() is called on it so no gradients are generated and no weights are changed.
+
+On the final training run: training loss 1.4610, validation loss 1.0829. Validation loss is lower than training loss because the training figure is an average across the whole epoch, including the early batches when the model was still learning, while validation was measured once at the end.
 
 # Model
 
@@ -154,7 +173,9 @@ Learning rate: 5e-5
 
 # Results
 
-**ROUGE-1 F1: 0.5154**, measured on 100 reports from the held-out test set. The brief requires 0.3 or higher.
+**ROUGE-1 F1: 0.5198**, measured on 100 reports from the held-out test set. The brief requires 0.3 or higher.
+
+ROUGE-2 F1: 0.4266. ROUGE-L F1: 0.5172.
 
 The three sample findings for the project brief, tested against the live API:
 
@@ -162,12 +183,14 @@ The three sample findings for the project brief, tested against the live API:
    Model impression: 'No acute cardiopulmonary abnormalities.'
 
 2. Input findings: 'The lungs are clear. Heart size and mediastinal contours are normal. No osseous abnormalities.'
-   Model impression: 'No acute process.'
+   Model impression: 'Negative chest x-.'
 
 3. Input findings: 'AP and lateral views were obtained. Bibasilar atelectasis and small left-sided pleural effusion. Stable cardiomegaly. No pneumothorax. Mild pulmonary vascular congestion.'
-   Model impression: 'No acute or active cardiac, pulmonary or pleural disease.'
+   Model impression: 'No acute cardiopulmonary process.'
 
-Output 1 and 2 correspond correctly to their inputs, which describe normal studies. Output 3 doesn't, the input describes bibasilar atelectasis, and the model returned a normal impression. This is majority class bias, normal studies dominate the training data, so the model has learned to favor a "nothing acute" impression regardless of input. See the limitations section of the project documentation for a fuller discussion and proposed fixes.
+Output 1 corresponds correctly to its input, which describes a normal study. Output 3 doesn't as the input describes bibasilar atelectasis and a pleural effusion, and the model returned a normal impression. This is majority class bias: normal studies dominate the training data, so the model has learned to favor a "nothing acute" impression regardless of input.
+
+Output 2 shows a separate problem introduced by data cleaning. The raw reports use "XXXX" as a de-identification placeholder, which appears inside words such as "x-XXXX" for x-ray. The cleaning step removes it, so impressions like "Negative chest x-XXXX" became "Negative chest x-" in the training data, and the model has learned to reproduce that truncated phrase. Replacing the placeholder with a marker token, or dropping records that end mid-word after cleaning, would fix it.
 
 # Deployment
 
