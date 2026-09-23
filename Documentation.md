@@ -2,13 +2,13 @@
 
 ## Model summary
 
-This project fine-tunes 'facebook/bart-base', a pre-trained sequence-to-sequence transformer, to summarise radiology findings into short clinical impressions. The raw data is from the Indiana University Chest X-ray collection: 3,955 XML report files, which are parsed by 'xml_parser.py' to extract the findings and impression fields and discard all others. 'Data_cleaner.py' drops records where either field is missing or empty, leaving 3,419 usable pairs, and splits them with scikit-learn's 'train-test-split' into 2,393 training, 513 validation and 513 test examples, which is a 70/15/15 split. Before training, the text has to be converted into numbers the model can work with. This is done by the BART tokenizer in 'train_model.py', which caps each findings text at 256 units and each impression at 64. Training ran for 1 pass over the data on a laptop CPU, using a learning rate of 5e-5 and a batch size of 2. No tuning of these settings was carried out; they were picked to fit the memory available. The model was then tested on 100 held-out examples it had never seen, scored with the ROUGE-1 F1 measure. It scored 0.5154, comfortably above the 0.3 minimum threshold. This is the same model that is served by the live API.
+This project fine-tunes 'facebook/bart-base', a pre-trained sequence-to-sequence transformer, to summarise radiology findings into short clinical impressions. The raw data is from the Indiana University Chest X-ray collection: 3,955 XML report files, which are parsed by 'xml_parser.py' to extract the findings and impression fields and discard all others. 'Data_cleaner.py' drops records where either field is missing or empty, leaving 3,419 usable pairs, and splits them with scikit-learn's 'train-test-split' into 2,393 training, 513 validation and 513 test examples, which is a 70/15/15 split. Before training, the text has to be converted into numbers the model can work with. This is done by the BART tokenizer in 'train_model.py', which caps each findings text at 256 units and each impression at 64. Training ran for 1 pass over the data on a laptop CPU, using a learning rate of 5e-5 and a batch size of 2. No tuning of these settings was carried out; they were picked to fit the memory available. The model was then tested on 100 held-out examples it had never seen, scored with the ROUGE-1 F1 measure. It scored 0.5198, comfortably above the 0.3 minimum threshold. This is the same model that is served by the live API.
 
 ## Limitations and recommendations
 
 The main weakness is that the model plays it safe. Most chest X-rays in this dataset are normal, so the model has worked out that answering "no acute findings" is usually right, and it now gives that answer even when it shouldn't. Sample prediction 3 shows this clearly: the findings describe fluid on the lung, partial lung collapse and an enlarged heart, and the model still reported a normal result. The sentences it produces read well, but it isn't paying enough attention to what the findings actually say.
 
-Hardware was the other constraint. Training was carried out on my laptop with 8GB of memory and no graphics card, which is why the batch size is 2 and the model only saw the data once — loading everything at once crashed the machine. The validation set was created but not used, reserved for future tuning or early stopping.
+Hardware was the other constraint. Training was carried out on my laptop with 8GB of memory and no graphics card, which is why the batch size is 2 and the model only saw the data once — loading everything at once crashed the machine. The validation set is used during training to measure validation loss after each epoch, without updating the weights. On the final run: training loss 1.4610, validation loss 1.0829. With one epoch there is no curve to act on, but it confirms the model generalises to unseen text.
 
 The most useful improvement would be to fix the imbalance in the training data, either by using fewer normal cases or by making the model pay a bigger penalty for wrongly calling something normal. With better hardware it would be worth using a larger version of BART, training over several passes instead of one, and testing different settings to find the best combination. It would also help to measure accuracy in a way that checks whether the model spotted the actual medical problems, as ROUGE only compares word overlap and a confidently wrong "normal" answer can still score well.
 
@@ -27,7 +27,7 @@ A REST API that takes radiology findings as text and returns a short summary gen
 **Data example**
 
 ```json
-{"findings": "The lungs are clear. Heart size and mediastinal contours are normal. No osseous abnormalities."}
+{"findings": "The trachea is midline. The cardiomediastinal silhouette is normal. The lungs are clear, without evidence of acute infiltrate or effusion. There is no pneumothorax. The visualized bony structures reveal no acute abnormalities."}
 ```
 
 ### Success Response
@@ -37,7 +37,7 @@ A REST API that takes radiology findings as text and returns a short summary gen
 **Content example**
 
 ```json
-{"impression": "No acute findings."}
+{"impression": "No acute cardiopulmonary abnormalities."}
 ```
 
 ### Error Response
