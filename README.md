@@ -173,9 +173,9 @@ Learning rate: 5e-5
 
 # Results
 
-**ROUGE-1 F1: 0.5198**, measured on 100 reports from the held-out test set. The brief requires 0.3 or higher.
+**ROUGE-1 F1: 0.5474**, measured on all 513 reports of the held-out test set. The brief requires 0.3 or higher.
 
-ROUGE-2 F1: 0.4266. ROUGE-L F1: 0.5172.
+ROUGE-2 F1: 0.4634. ROUGE-L F1: 0.5462.
 
 The three sample findings for the project brief, tested against the live API:
 
