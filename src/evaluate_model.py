@@ -9,7 +9,7 @@ print("Evaluating the medical summarisation model")
 print()
 
 # Settings you can change
-how_many_to_test = 100
+how_many_to_test = None
 model_folder = "models/medical_summarizer"
 batch_eval = 4
 print("Settings")
