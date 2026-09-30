@@ -6,3 +6,4 @@ data/raw/
 *.egg-info/
 models/checkpoint/
 models/medical_summarizer_backup/
+project2/data/
