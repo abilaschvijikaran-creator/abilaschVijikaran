@@ -4,88 +4,353 @@
     <title>Radiology Text Summariser</title>
 
     <style>
+        /* ---------- colours used across the page ---------- */
+        :root {
+            --navy:      #0f1c33;   /* dark sidebar background */
+            --navy-soft: #1b2c4a;   /* slightly lighter navy for boxes */
+            --blue:      #2f6fed;   /* main accent colour */
+            --blue-dark: #2458c4;   /* button hover */
+            --page-bg:   #eef2f8;   /* light grey-blue page background */
+            --card:      #ffffff;   /* white cards */
+            --text:      #1a1f2b;   /* main body text */
+            --muted:     #6b7688;   /* grey helper text */
+            --line:      #dfe5ef;   /* light borders */
+        }
+
+        * { box-sizing: border-box; }
+
         body {
-            font-family: Arial;
-            max-width: 700px;
-            margin: 40px auto;
-            padding: 0 20px;
+            font-family: "Segoe UI", Arial, sans-serif;
+            margin: 0;
+            background-color: var(--page-bg);
+            color: var(--text);
+        }
+
+        /* ---------- two column layout: sidebar + main area ---------- */
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ---------- LEFT SIDEBAR ---------- */
+        .sidebar {
+            width: 320px;
+            background-color: var(--navy);
+            color: #ffffff;
+            padding: 32px 26px;
+            flex-shrink: 0;
+        }
+
+        .sidebar h1 {
+            font-size: 24px;
+            margin: 0 0 14px 0;
+            line-height: 1.25;
+        }
+
+        .sidebar .description {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #b9c4d6;
+            margin-bottom: 30px;
+        }
+
+        .sidebar h2 {
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #8ea3c4;
+            margin: 0 0 14px 0;
+        }
+
+        /* the tech stack items, two per row */
+        .stack {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .stack-item {
+            background-color: var(--navy-soft);
+            border: 1px solid #2c3f63;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: #e3e9f4;
+        }
+
+        /* small details block at the bottom of the sidebar */
+        .facts {
+            font-size: 13px;
+            line-height: 1.9;
+            color: #b9c4d6;
+            border-top: 1px solid #2c3f63;
+            padding-top: 18px;
+        }
+
+        .facts span {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        /* ---------- RIGHT MAIN AREA ---------- */
+        .main {
+            flex-grow: 1;
+            padding: 32px 36px;
+        }
+
+        /* the three ROUGE score cards along the top */
+        .scores {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 18px;
+            margin-bottom: 26px;
+        }
+
+        .score-card {
+            background-color: var(--card);
+            border: 1px solid var(--line);
+            border-top: 4px solid var(--blue);
+            border-radius: 10px;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .score-value {
+            font-size: 30px;
+            font-weight: 700;
+            color: var(--blue);
+        }
+
+        /* white panels used for the input and the output */
+        .panel {
+            background-color: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 22px;
+            margin-bottom: 22px;
+        }
+
+        .panel h2 {
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin: 0 0 14px 0;
         }
 
         textarea {
             width: 100%;
             height: 150px;
-            padding: 10px;
-            font-family: Arial;
+            padding: 14px;
+            font-family: inherit;
             font-size: 15px;
+            line-height: 1.5;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--blue);
         }
 
         button {
-            margin-top: 10px;
-            padding: 10px 20px;
+            margin-top: 14px;
+            padding: 13px 26px;
             font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #ffffff;
+            background-color: var(--blue);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
         }
 
-        .result {
-            margin-top: 30px;
-            padding: 15px;
-            background-color: #f4f4f4;
+        button:hover { background-color: var(--blue-dark); }
+
+        /* the box the impression gets written into */
+        .output-box {
+            background-color: #f6f8fc;
+            border: 1px solid var(--line);
+            border-left: 4px solid var(--blue);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 15px;
+            line-height: 1.6;
+            min-height: 56px;
+            color: var(--text);
+        }
+
+        .placeholder { color: var(--muted); }
+
+        /* red styling, only used when the API returns an error */
+        .error-box {
+            background-color: #fdf3f3;
+            border: 1px solid #f3d4d4;
+            border-left: 4px solid #d94b4b;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 15px;
+            color: #9e2b2b;
+        }
+
+        /* the small dark strip showing the API call */
+        .api-snapshot {
+            background-color: var(--navy);
+            border-radius: 8px;
+            padding: 14px 18px;
+            font-family: Consolas, monospace;
+            font-size: 14px;
+            color: #9fd0ff;
+        }
+
+        .api-snapshot .method {
+            color: #ffffff;
+            font-weight: 700;
+            margin-right: 10px;
+        }
+
+        /* stack the columns on a narrow screen */
+        @media (max-width: 900px) {
+            .layout { flex-direction: column; }
+            .sidebar { width: 100%; }
+            .scores { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 
 <body>
 
-    <h1>Radiology Text Summariser</h1>
-    <p>Paste the findings from a chest X-ray report below and the model will summarise them into an impression.</p>
+<div class="layout">
 
-    <h3>Findings (input)</h3>
-    <textarea id="findings"></textarea>
+    <!-- ==================== LEFT SIDEBAR ==================== -->
+    <div class="sidebar">
 
-    <button onclick="getImpression()">Generate impression</button>
+        <h1>Radiology Text Summariser</h1>
 
-    <div id="result"></div>
+        <p class="description">
+            A fine-tuned BART model that reads the written findings from a chest X-ray
+            report and summarises them into a short clinical impression. Trained on
+            3,419 report pairs from the Indiana University chest X-ray collection and
+            served as a REST API.
+        </p>
 
-    <script>
+        <h2>Tech stack</h2>
+        <div class="stack">
+            <div class="stack-item">Python 3.11</div>
+            <div class="stack-item">PyTorch</div>
+            <div class="stack-item">Transformers</div>
+            <div class="stack-item">Flask</div>
+            <div class="stack-item">Gunicorn</div>
+            <div class="stack-item">Docker</div>
+            <div class="stack-item">AWS EC2</div>
+            <div class="stack-item">Git LFS</div>
+        </div>
 
-        function getImpression() {
+        <h2>Model</h2>
+        <div class="facts">
+            Base model: <span>facebook/bart-base</span><br>
+            Training pairs: <span>2,393</span><br>
+            Test reports: <span>513</span><br>
+            Training epochs: <span>3</span><br>
+            Task: <span>Abstractive summarisation</span>
+        </div>
 
-            // get whatever the user typed in the box
-            var findingsText = document.getElementById("findings").value;
-            var resultBox = document.getElementById("result");
+    </div>
 
-            // let the user know something is happening
-            resultBox.innerHTML = "<p>Generating impression, please wait...</p>";
+    <!-- ==================== RIGHT MAIN AREA ==================== -->
+    <div class="main">
 
-            // send the findings to the /predict endpoint
-            fetch("/predict", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ findings: findingsText })
-            })
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function (data) {
+        <!-- the three ROUGE scores from evaluate_model.py -->
+        <div class="scores">
 
-                // if the API sent back an error, show that instead
-                if (data.error) {
-                    resultBox.innerHTML = "<div class='result'><b>Error:</b> " + data.error + "</div>";
-                } else {
-                    resultBox.innerHTML =
-                        "<div class='result'>" +
-                        "<h3>Findings sent</h3>" +
-                        "<p>" + findingsText + "</p>" +
-                        "<h3>Impression generated by the model</h3>" +
-                        "<p>" + data.impression + "</p>" +
-                        "</div>";
-                }
-            })
-            .catch(function (error) {
-                resultBox.innerHTML = "<div class='result'>Could not reach the API. Is the server running?</div>";
-            });
-        }
+            <div class="score-card">
+                <div class="score-label">ROUGE-1</div>
+                <div class="score-value">0.6060</div>
+            </div>
 
-    </script>
+            <div class="score-card">
+                <div class="score-label">ROUGE-2</div>
+                <div class="score-value">0.5224</div>
+            </div>
+
+            <div class="score-card">
+                <div class="score-label">ROUGE-L</div>
+                <div class="score-value">0.6028</div>
+            </div>
+
+        </div>
+
+        <!-- where the user types the findings -->
+        <div class="panel">
+            <h2>Clinical findings</h2>
+            <textarea id="findings" placeholder="Paste the findings from a chest X-ray report here..."></textarea>
+            <button onclick="getImpression()">Generate impression</button>
+        </div>
+
+        <!-- where the model's answer gets written -->
+        <div class="panel">
+            <h2>Generated impression</h2>
+            <div id="result">
+                <div class="output-box placeholder">The impression will appear here.</div>
+            </div>
+        </div>
+
+        <!-- a reminder of what the page is actually calling -->
+        <div class="api-snapshot">
+            <span class="method">POST</span>/predict &nbsp;{ "findings": "string" }
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+    function getImpression() {
+
+        // get whatever the user typed in the box
+        var findingsText = document.getElementById("findings").value;
+        var resultBox = document.getElementById("result");
+
+        // let the user know something is happening
+        resultBox.innerHTML = "<div class='output-box placeholder'>Generating impression, please wait...</div>";
+
+        // send the findings to the /predict endpoint
+        fetch("/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ findings: findingsText })
+        })
+        .then(function (response) {
+            return response.json();
+        })
+        .then(function (data) {
+
+            // if the API sent back an error, show that instead
+            if (data.error) {
+                resultBox.innerHTML = "<div class='error-box'><b>Error:</b> " + data.error + "</div>";
+            } else {
+                resultBox.innerHTML = "<div class='output-box'>" + data.impression + "</div>";
+            }
+        })
+        .catch(function (error) {
+            resultBox.innerHTML = "<div class='error-box'>Could not reach the API. Is the server running?</div>";
+        });
+    }
+
+</script>
 
 </body>
 </html>
