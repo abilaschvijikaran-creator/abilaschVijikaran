@@ -3,12 +3,14 @@ import torch
 import torchvision.transforms as transforms
 from torchvision import models
 from torch import nn
+from torch.nn.functional import cosine_similarity
 from PIL import Image
 import pandas as pd
 import zipfile
-import io
 import os
 from huggingface_hub import hf_hub_download
+
+DATA_REPO = "abz2781/clothing-recommender-data"
 
 @st.cache_resource
 def load_model():
@@ -19,40 +21,38 @@ def load_model():
 
 @st.cache_resource
 def load_data():
-    embeddings = torch.load(hf_hub_download("abz2781/clothing-recommender-data", "embeddings.pt", repo_type="dataset"))
-    filenames = pd.read_csv(hf_hub_download("abz2781/clothing-recommender-data", "filenames.csv", repo_type="dataset"))
+    embeddings = torch.load(hf_hub_download(DATA_REPO, "embeddings.pt", repo_type="dataset"), map_location="cpu")
+    embeddings = embeddings.reshape(embeddings.shape[0], -1)
+    filenames = pd.read_csv(hf_hub_download(DATA_REPO, "filenames.csv", repo_type="dataset"))
     return embeddings, filenames
 
 @st.cache_resource
 def load_thumbnails():
-    thumb_zip = hf_hub_download("abz2781/clothing-recommender-data", "thumbnails.zip", repo_type="dataset")
-    with zipfile.ZipFile(thumb_zip, 'r') as zip_ref:
+    thumb_zip = hf_hub_download(DATA_REPO, "thumbnails.zip", repo_type="dataset")
+    with zipfile.ZipFile(thumb_zip, "r") as zip_ref:
         zip_ref.extractall("/tmp/thumbnails")
     return "/tmp/thumbnails"
 
-def get_embedding(image, model, device):
+def get_embedding(image, model):
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    img_tensor = transform(image).unsqueeze(0).to(device)
+    img_tensor = transform(image).unsqueeze(0)
     with torch.no_grad():
         embedding = model(img_tensor)
-        embedding = embedding.squeeze(-1).squeeze(-1)
-    return embedding.cpu()
+    return embedding.reshape(-1)
 
 def find_similar(query_embedding, all_embeddings, n=5):
-    query_embedding = query_embedding.unsqueeze(0)
-    similarities = (all_embeddings @ query_embedding.T) / (all_embeddings.norm(dim=1, keepdim=True) * query_embedding.norm())
-    top_indices = torch.topk(similarities.squeeze(), n)[1].tolist()
-    top_scores = torch.topk(similarities.squeeze(), n)[0].tolist()
-    return top_indices, top_scores
+    # Compare the query vector against every stored vector, then keep the top n
+    similarities = cosine_similarity(all_embeddings, query_embedding.unsqueeze(0), dim=1)
+    top_scores, top_indices = torch.topk(similarities, n)
+    return top_indices.tolist(), top_scores.tolist()
 
 st.title("Clothing Recommender")
 st.write("Upload a clothing image to find similar items from our database of 23,023 products")
 
-device = torch.device("cpu")
 model = load_model()
 embeddings, filenames = load_data()
 thumb_dir = load_thumbnails()
@@ -66,7 +66,7 @@ if uploaded_file:
     with col1:
         st.image(image, caption="Your Image", use_column_width=True)
 
-    query_embedding = get_embedding(image, model, device)
+    query_embedding = get_embedding(image, model)
     top_indices, top_scores = find_similar(query_embedding, embeddings, n=5)
 
     st.write("### Top 5 Similar Products")
