@@ -19,13 +19,13 @@ def load_model():
 
 @st.cache_resource
 def load_data():
-    embeddings = torch.load(hf_hub_download("abz2781/clothing-recommender-data", "embeddings.pt"))
-    filenames = pd.read_csv(hf_hub_download("abz2781/clothing-recommender-data", "filenames.csv"))
+    embeddings = torch.load(hf_hub_download("abz2781/clothing-recommender-data", "embeddings.pt", repo_type="dataset"))
+    filenames = pd.read_csv(hf_hub_download("abz2781/clothing-recommender-data", "filenames.csv", repo_type="dataset"))
     return embeddings, filenames
 
 @st.cache_resource
 def load_thumbnails():
-    thumb_zip = hf_hub_download("abz2781/clothing-recommender-data", "thumbnails.zip")
+    thumb_zip = hf_hub_download("abz2781/clothing-recommender-data", "thumbnails.zip", repo_type="dataset")
     with zipfile.ZipFile(thumb_zip, 'r') as zip_ref:
         zip_ref.extractall("/tmp/thumbnails")
     return "/tmp/thumbnails"
@@ -61,16 +61,16 @@ uploaded_file = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
     image = Image.open(uploaded_file).convert("RGB")
-    
+
     col1, col2 = st.columns([1, 2])
     with col1:
         st.image(image, caption="Your Image", use_column_width=True)
-    
+
     query_embedding = get_embedding(image, model, device)
     top_indices, top_scores = find_similar(query_embedding, embeddings, n=5)
-    
+
     st.write("### Top 5 Similar Products")
-    
+
     cols = st.columns(5)
     for i, (idx, score) in enumerate(zip(top_indices, top_scores)):
         with cols[i]:
