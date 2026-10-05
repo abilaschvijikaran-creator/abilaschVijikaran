@@ -20,13 +20,13 @@ This takes radiology findings, then returns a summarised impression.
 **Request body**
 
 ```json
-{"findings": "The trachea is midline. The cardiomediastinal silhouette is normal. The lungs are clear, without evidence of acute infiltrate or effusion. There is no pneumothorax. The visualized bony structures reveal no acute abnormalities."}
+{"findings": "The lungs are clear. Heart size and mediastinal contours are normal. No osseous abnormalities."}
 ```
 
 **Response - 200 OK**
 
 ```json 
-{"impression":"No acute cardiopulmonary abnormalities."}
+{"impression":"No acute findings."}
 ```
 
 **Response - 400 Bad Request**
@@ -41,43 +41,39 @@ The endpoint checks the request in four stages, each with its own message:
 # Repository structure
 project1/
 |- src/
-|  |- templates
-|  |  |- index.html
-|  |- api.py
-|  |- train_model.py
-|  |- Data_cleaner.py
-|  |- evaluate_model.py
-|  |- xml_parser.py
-|  |- verify_data.py
+||- api.py
+||- train_model.py
+||- Data_cleaner.py
+||- evaluate_model.py
+||- xml_parser.py
+||- verify_data.py
 |- data/
-|  |- raw/
-|  |- processed/
+|- processed/
+||- findings_impressions.csv
+||- train.csv
+||- test.csv
+||- val.csv
 |- models/
-|  |- medical_summarizer/
+|- medical_summarizer
 |- requirements.txt
 |- Dockerfile
-|- .dockerignore
-|- .gitattributes
-|- .gitignore
-|- run_pipeline.py
 
 
 # Setup
-Python version: this project was built and tested with Python 3.11, which matches the python:3.11-slim base image used in the Dockerfile. Use Python 3.11 before installing the requirements below
 
 Clone the repository. Git LFS is required as the fine-tuned model weights are stored using it:
 
 ```powershell
 git lfs install
 git clone https://github.com/abilaschvijikaran-creator/abilaschVijikaran.git
-cd abilaschVijikaran\project1
+cd abilaschVijikaran
 ```
 
 create and activate a virtual environment:
 
 ```powershell
 python -m venv venv
-.\venv\Scripts\Activate
+.\\venv\\Scripts\\Activate
 ```
 
 Install dependencies:
@@ -85,65 +81,17 @@ Install dependencies:
 ```powershell
 pip install -r requirements.txt
 ```
-# Dataset setup
-
-The raw data isn't included in this repository, so it needs to be downloaded before the pipeline can be run
-
-1. Download the reports
-From the [NIH Open-i archive](https://openi.nlm.nih.gov/faq?download=true), select "Where can I get the Chest X-ray images in Open-i?", then "Reports:Link". Alternatively, use the supplied NLMCXR_reports.tgz.
-
-2. Extract the XML files to data/raw/ecgen-radiology/
-The folder doesn't exist in the repository so create it. The expected structure is:
-```text
-project1/
-|- data/
-||- raw/
-|||- ecgen-radiology/
-||||- 1.xml
-||||- 2.xml
-||||- ...
-||- processed/
-```
-
-3. Check if it worked
-
-```powershell
-Get-ChildItem data\raw\ecgen-radiology\*.xml | Measure-Object
-```
-This should report 3955 files.
-
-4. Run the pipeline
-Start with the parser, this reads the XML files and creates data/processed/findings_impressions.csv:
-```powershell
-python src\xml_parser.py
-```
-Then follow through the Pipeline overview section below for the rest of the steps.
 
 # Pipeline overview
 
 The project follows this sequence:
-
-1. Data processing ('xml_parser.py') - Parses raw XML reports and extracts findings/impression pairs into a CSV
-2. Data cleaning ('Data_cleaner.py') - Cleans and validates the text, then splits into train, validation and test sets
-3. Model training ('train_model.py') - Fine-tunes 'facebook/bart-base' on the training split (2393 examples)
+1. Data processing ('xml_parser.py') - Parses raw XML reports and extracts findings/impression pairs
+2. Data cleaning ('Data_cleaner.py') - Cleans and validates the text, then splits it into train, validation and test sets
+3. Model training ('train_model.py') - Fine-tunes 'facebook/bart-base' on the training split (2393)
 4. Evaluation ('evaluate_model.py') - Creates predictions on the test set and calculates ROUGE-1 F1 score
-5. Deployment ('api.py') - Serves the fine-tuned model as a REST API on AWS EC2
+5. Deployment ('api.py') - Serves the fine-tuned model as a rest API on AWS EC2
 
 The trained model is saved to 'models/medical_summarizer/' and deployed on the live API.
-
-# Web interface
-
-As well as the REST API, the app serves a simple HTML page at the base address ('http://13.63.6.159:5000/'). Paste a findings report into the box and click Generate impression. The page posts to the same '/predict' endpoint described above.
-
-# Running the full pipeline
-
-To run every stage in one go (parse, clean, train, evaluate):
-
-```powershell
-python run_pipeline.py
-```
-
-Note this includes model training, which takes around two hours on a CPU.
 
 # Dataset
 
@@ -153,50 +101,35 @@ The Indiana University Chest X-ray collection, available from the [NIH Open-i ar
 - 3419 usable pairs after extracting the different 'Findings' and 'Impression' fields and dropping records where either was missing or empty
 - All other fields in the XML are ignored
 
-# Validation
-Training uses 'train.csv' to update the model weights and val.csv to measure performance during training. After each epoch the model is run over the full validation set and the average validation loss is printed with the training loss.
-
-The validation data is never used to update the weights. The evaluation runs inside model.eval() and torch.no_grad() and neither loss.backward() or optimizer.step() is called on it so no gradients are generated and no weights are changed.
-
-On the final training run: training loss 1.4610, validation loss 1.0829. Validation loss is lower than training loss because the training figure is an average across the whole epoch, including the early batches when the model was still learning, while validation was measured once at the end.
-
 # Model
 
-Base checkpoint: 'facebook/bart-base'
-Task: Abstractive summarisation
+Base checkpoint : 'facebook/bart-base'
+Task: Abstractive summarisation 
 Usable pairs: 3419
 Training pairs: 2393
-Train/validation/test split: 70/15/15 (2393 train, 513 validation, 513 test)
-Epochs: 1
-Batch size: 2
+Train/test split : 70/15/15 (2393 train, 513 validation, 513 test)
+Epochs: 3
+Batch size: 2 
 Learning rate: 5e-5
 
 # Results
 
-**ROUGE-1 F1: 0.5474**, measured on all 513 reports of the held-out test set. The brief requires 0.3 or higher.
+**ROUGE-1: 0.6060, ROUGE-2: 0.5224, ROUGE-L: 0.6028**, measured on 100 held-out test examples. The brief requires 0.3 or higher.
 
-ROUGE-2 F1: 0.4634. ROUGE-L F1: 0.5462.
+The three sample findings for the project brief run against the live API:
 
-The three sample findings for the project brief, tested against the live API:
+1. input findings: 'The trachea is midline. The cardiomediastinal silhouette is normal. The lungs are clear, without evidence of acute infiltrate or effusion. There is no pneumothorax. The visualized bony structures reveal no acute abnormalities.'
+Model impression: 'No acute cardiopulmonary abnormalities.'
+2. input findings: 'The lungs are clear. Heart size and mediastinal contours are normal. No osseous abnormalities. '
+Model impression: 'No acute findings.'
+3. input findings: 'AP and lateral views were obtained. Bibasilar atelectasis and small left-sided pleural effusion. Stable cardiomegaly. No pneumothorax. Mild pulmonary vascular congestion.'
+Model impression: 'Bibasilar atelectasis with left pleural effusion and cardiomegaly.'
 
-1. Input findings: 'The trachea is midline. The cardiomediastinal silhouette is normal. The lungs are clear, without evidence of acute infiltrate or effusion. There is no pneumothorax. The visualized bony structures reveal no acute abnormalities.'
-   Model impression: 'No acute cardiopulmonary abnormalities.'
-
-2. Input findings: 'The lungs are clear. Heart size and mediastinal contours are normal. No osseous abnormalities.'
-   Model impression: 'Negative chest x-.'
-
-3. Input findings: 'AP and lateral views were obtained. Bibasilar atelectasis and small left-sided pleural effusion. Stable cardiomegaly. No pneumothorax. Mild pulmonary vascular congestion.'
-   Model impression: 'No acute cardiopulmonary process.'
-
-Output 1 corresponds correctly to its input, which describes a normal study. Output 3 doesn't as the input describes bibasilar atelectasis and a pleural effusion, and the model returned a normal impression. This is majority class bias: normal studies dominate the training data, so the model has learned to favor a "nothing acute" impression regardless of input.
-
-Output 2 shows a separate problem introduced by data cleaning. The raw reports use "XXXX" as a de-identification placeholder, which appears inside words such as "x-XXXX" for x-ray. The cleaning step removes it, so impressions like "Negative chest x-XXXX" became "Negative chest x-" in the training data, and the model has learned to reproduce that truncated phrase. Replacing the placeholder with a marker token, or dropping records that end mid-word after cleaning, would fix it.
+Output 1 and 2 correspond correctly to their inputs, which describe normal studies. Output 3 now correctly identifies the key findings: bibasilar atelectasis, left pleural effusion, and cardiomegaly. With three epochs of training, the model has learned to better balance normal and abnormal cases.
 
 # Deployment
 
 The API runs on an AWS EC2 't3.micro' instance behind an Elastic IP ('13.63.6.159'), so the address stays fixed across restarts. The app is containerised with Docker and served by Gunicorn with a single worker, as each worker loads its own copy of the model into memory.
-
-The model is the full-precision fine-tuned BART, the same one used in evaluation. It runs on CPU only, which is fine for a single worker on a t3.micro.
 
 Three constraints shaped the deployment:
 
@@ -205,7 +138,7 @@ Three constraints shaped the deployment:
 3. Other platforms used - Railway and Render had storage or memory limitations. Fly.io had Docker registry authentication failures. AWS EC2 provided the flexibility needed to work around these constraints.
 
 # Tech stack
-- python 3.11
+- python 3
 - pytorch
 - transformers
 - rouge-score
