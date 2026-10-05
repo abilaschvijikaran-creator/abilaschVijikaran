@@ -140,7 +140,7 @@ print()
 # Set up training hyperparameters
 print("Setting up the training hyperparameters...")
 learning_rate = 5e-5
-num_epochs = 1         
+num_epochs = 3         
 save_every = 300
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 save_folder = "models/medical_summarizer"
