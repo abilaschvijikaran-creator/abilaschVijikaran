@@ -4,31 +4,112 @@ Upload a photo of a piece of clothing and get back the 5 most visually similar p
 
 **Live app:** https://abilaschvijikaran-b7brzhodzpjrgjkozgy2ch.streamlit.app
 
-## What's in this folder
+## Project Status
 
-| File | What it is |
-|---|---|
-| `project2.ipynb` ( Full pipeline: data cleaning, feature creation, model and embeddings, output functions, model outputs )
-| `Documentation.md` ( One-page model summary and limitations )
-| `clothing-recommender/streamlit_app.py` (the web app code)
-| `clothing-recommender/requirements.txt` ( packages for the web app )
+- Data pipeline: Complete (23,023 cleaned images)
+- Model: Trained and deployed
+- Live app: Running on Streamlit Cloud
+- Local reproducibility: Verified
+
+## Project structure
+
+```
+project2/
+├── notebooks/
+│   └── project2.ipynb
+├── src/
+│   ├── config.py          
+│   ├── data_processing.py      
+│   ├── feature_creation.py     
+│   ├── model.py               
+│   └── recommend.py            
+├── clothing-recommender/
+│   ├── streamlit_app.py        
+│   └── requirements.txt        
+├── requirements.txt            
+├── Documentation.md            
+└── README.md
+```
+
+The scripts in `src/` are the main, reproducible project code. The notebook is the record of the pipeline being run and tested in Colab, with its outputs visible.
 
 ## How it works
 
-1. **Data cleaning:** 33,565 images from the Vibrent Clothes Rental dataset (Kaggle) were checked. 10,533 exact duplicates and 9 images under 50 pixels were removed, leaving 23,023.
+1. **Data cleaning:** 33,565 images from the Vibrent Clothes Rental dataset (Kaggle) were checked. 10,533 exact duplicates (same MD5 file hash) and 9 images under 50 pixels were removed, leaving 23,023. No files were unreadable.
 2. **Feature creation:** each image is resized to 224×224, converted to a tensor and normalised with ImageNet mean and standard deviation.
 3. **Model:** a pre-trained ResNet50 with its final layer removed turns each image into a 2,048-number embedding. All catalogue embeddings are saved once.
 4. **Recommendation:** an input image is embedded the same way and compared with every saved embedding using cosine similarity. The 5 highest scores are returned.
 
-## How to run the notebook
+## Quick Start (Local Machine)
 
-1. Open `project2.ipynb` in Google Colab.
-2. Run the cells in order, top to bottom. The notebook mounts Google Drive and downloads the dataset from Kaggle with `kagglehub`.
-3. The cleaning check and the embedding step take the longest because they go through every image.
-4. If a session disconnects, the checkpoint cell in the Output Functions section reloads the saved embeddings from Drive, so the earlier sections don't need to run again.
+To run the pipeline locally:
 
-## How the app is deployed
+```bash
+# Clone and navigate
+git clone https://github.com/abilaschvijikaran-creator/abilaschVijikaran.git
+cd abilaschVijikaran/project2
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the pipeline in order
+python src/data_processing.py      
+python src/feature_creation.py     
+python src/model.py                
+python src/recommend.py photo.jpg
+```
+
+## How to Reproduce (Full Setup)
+
+The scripts read and write to a local or cloud folder. By default, they use Google Drive (`/content/drive/MyDrive/project2`). To use a different location, change `PROJECT_DIR` in `src/config.py`.
+
+### Option 1: Google Colab (Original method)
+
+1. Open a new Colab notebook, preferably with a GPU runtime.
+2. Mount Google Drive and download the dataset into `MyDrive/project2/data` (the first cells of `notebooks/project2.ipynb` do this with `kagglehub`).
+3. Clone this repository and install dependencies:
+   ```
+   !git clone https://github.com/abilaschvijikaran-creator/abilaschVijikaran.git
+   %cd abilaschVijikaran/project2
+   !pip install -r requirements.txt
+   ```
+4. Run the pipeline scripts as shown above, or follow the notebook:
+   ```
+   %run notebooks/project2.ipynb
+   ```
+
+If a session disconnects, the first cell of section 4 reloads the saved embeddings from Drive, so sections 1 to 3 don't need to run again.
+
+### Option 2: Local Machine
+
+1. Clone the repository and navigate to the project folder.
+2. Download the Vibrent Clothes Rental dataset from [Kaggle](https://www.kaggle.com/datasets/abilaschvijikaran/vibrent-clothes-rental) and extract it to `data/images/`.
+3. Install dependencies: `pip install -r requirements.txt`
+4. Run the pipeline scripts in order (see Quick Start above).
+5. Update `PROJECT_DIR` in `src/config.py` if your data is in a different location.
+
+## Technical Specifications
+
+- **Model**: ResNet50 (ImageNet1K_V1 weights)
+- **Embedding dimension**: 2,048
+- **Image size**: 224×224
+- **Similarity metric**: Cosine similarity
+- **Catalogue size**: 23,023 images
+- **Recommendations returned**: Top 5
+- **Data source**: Vibrent Clothes Rental (Kaggle)
+
+## How the App is Deployed
 
 - Hosted on Streamlit Community Cloud with Python 3.11.
 - The embeddings, file names and thumbnails are stored in the public Hugging Face dataset `abz2781/clothing-recommender-data`. The app downloads them when it starts.
-- `requirements.txt` links CPU-only PyTorch 2.1.2 wheels built for Linux and Python 3.11, to match Streamlit Cloud. To run the app on another system, install `torch` and `torchvision` for that system instead, then run `streamlit run streamlit_app.py` from the `clothing-recommender` folder.
+- `clothing-recommender/requirements.txt` links CPU-only PyTorch 2.1.2 wheels built for Linux and Python 3.11, to match Streamlit Cloud. To run the app on another system, install `torch` and `torchvision` for that system instead, then run `streamlit run streamlit_app.py` from the `clothing-recommender` folder.
+
+## Performance
+Test case (T-shirt): Similarity scores 0.899–0.913
+Target threshold: 0.700
+Model performs well on visual similarity matching
+
+
+- Test case (T-shirt): Similarity scores 0.899–0.913
+- Target threshold: 0.700 ✓
+- Model performs well on visual similarity matching
