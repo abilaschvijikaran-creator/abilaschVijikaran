@@ -8,7 +8,7 @@ Run from the project2 folder (with Google Drive mounted in Colab):
 
 import hashlib
 import os
-from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
 from PIL import Image
@@ -16,73 +16,56 @@ from PIL import Image
 from config import CLEANED_CSV, CLEANED_IMAGES_DIR, MIN_SIZE, RAW_IMAGES_DIR
 
 
-def get_file_hash(filepath, chunk_size=65536):
-    """Return MD5 hash of file."""
-    md5 = hashlib.md5()
-    with open(filepath, "rb") as f:
-        for chunk in iter(lambda: f.read(chunk_size), b""):
-            md5.update(chunk)
-    return md5.hexdigest()
-
-
 def clean_images(raw_dir=RAW_IMAGES_DIR, cleaned_dir=CLEANED_IMAGES_DIR,
                  cleaned_csv=CLEANED_CSV, min_size=MIN_SIZE):
     """Remove duplicates and small images, save cleaned list to CSV."""
     os.makedirs(cleaned_dir, exist_ok=True)
 
-    # Find all images
-    image_files = sorted([f for f in os.listdir(raw_dir) 
-                         if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
-    
-    print(f"Found {len(image_files)} images to check")
+    raw_files = os.listdir(raw_dir)
+    print(f"Starting with {len(raw_files)} images")
 
-    # Track hashes and cleaned images
-    seen_hashes = {}
-    duplicates = 0
-    too_small = 0
-    unreadable = 0
-    cleaned = []
+    invalid_images = []
+    duplicate_hashes = {}
+    cleaned_files = []
 
-    for i, filename in enumerate(image_files):
-        filepath = f"{raw_dir}/{filename}"
-        
+    for idx, filename in enumerate(raw_files):
+        if idx % 5000 == 0:
+            print(f"Processing: {idx}/{len(raw_files)}")
+
+        filepath = os.path.join(raw_dir, filename)
+
         try:
-            # Check if file is readable
-            img = Image.open(filepath)
-            w, h = img.size
-            
-            # Check size
-            if w < min_size or h < min_size:
-                too_small += 1
-                continue
-            
-            # Check for duplicates
-            file_hash = get_file_hash(filepath)
-            if file_hash in seen_hashes:
-                duplicates += 1
-                continue
-            
-            seen_hashes[file_hash] = filename
-            cleaned.append(filename)
-            
-        except Exception:
-            unreadable += 1
-            continue
-        
-        if (i + 1) % 5000 == 0:
-            print(f"Processed {i + 1}/{len(image_files)}")
+            img = Image.open(filepath).convert('RGB')
 
-    # Save cleaned list
-    df = pd.DataFrame({"filename": cleaned})
-    df.to_csv(cleaned_csv, index=False)
+            if img.size[0] < min_size or img.size[1] < min_size:
+                invalid_images.append(filename)
+                continue
 
-    print(f"\nResults:")
-    print(f"Duplicates removed: {duplicates}")
-    print(f"Small images removed: {too_small}")
-    print(f"Unreadable files: {unreadable}")
-    print(f"Total removed: {duplicates + too_small + unreadable}")
-    print(f"Images kept: {len(cleaned)}")
-    print(f"Cleaned list saved to {cleaned_csv}")
+            with open(filepath, 'rb') as f:
+                file_hash = hashlib.md5(f.read()).hexdigest()
+
+            if file_hash in duplicate_hashes:
+                invalid_images.append(filename)
+                continue
+
+            duplicate_hashes[file_hash] = filename
+
+            output_path = os.path.join(cleaned_dir, filename)
+            img.save(output_path, 'JPEG', quality=95)
+            cleaned_files.append(filename)
+
+        except Exception as e:
+            invalid_images.append(filename)
+
+    print(f"\nCleaning complete:")
+    print(f"Cleaned: {len(cleaned_files)}")
+    print(f"Invalid: {len(invalid_images)}")
+    print(f"Removed: {len(raw_files) - len(cleaned_files)}")
+
+    df_cleaned = pd.DataFrame({'filename': cleaned_files})
+    df_cleaned.to_csv(cleaned_csv, index=False)
+    print(f"\nSaved {len(cleaned_files)} cleaned images")
+    print(f"CSV saved: cleaned_images_v2.csv")
 
 
 if __name__ == "__main__":
