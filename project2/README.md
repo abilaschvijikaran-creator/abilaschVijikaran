@@ -7,9 +7,8 @@ Upload a photo of a piece of clothing and get back the 5 most visually similar p
 ## Project Status
 
 - Data pipeline: Complete (23,023 cleaned images)
-- Model: Trained and deployed
+- Model: Pre-trained ResNet50, embeddings created
 - Live app: Running on Streamlit Cloud
-- Local reproducibility: Verified
 
 ## Project structure
 
@@ -73,10 +72,7 @@ The scripts read and write to a local or cloud folder. By default, they use Goog
    %cd abilaschVijikaran/project2
    !pip install -r requirements.txt
    ```
-4. Run the pipeline scripts as shown above, or follow the notebook:
-   ```
-   %run notebooks/project2.ipynb
-   ```
+4. Run the pipeline scripts as shown above, or open `notebooks/project2.ipynb` in Colab and run the cells from top to bottom.
 
 If a session disconnects, the first cell of section 4 reloads the saved embeddings from Drive, so sections 1 to 3 don't need to run again.
 
@@ -105,11 +101,7 @@ If a session disconnects, the first cell of section 4 reloads the saved embeddin
 - `clothing-recommender/requirements.txt` links CPU-only PyTorch 2.1.2 wheels built for Linux and Python 3.11, to match Streamlit Cloud. To run the app on another system, install `torch` and `torchvision` for that system instead, then run `streamlit run streamlit_app.py` from the `clothing-recommender` folder.
 
 ## Performance
-Test case (T-shirt): Similarity scores 0.899–0.913
-Target threshold: 0.700
-Model performs well on visual similarity matching
-
 
 - Test case (T-shirt): Similarity scores 0.899–0.913
-- Target threshold: 0.700 ✓
+- Target threshold: 0.7
 - Model performs well on visual similarity matching
