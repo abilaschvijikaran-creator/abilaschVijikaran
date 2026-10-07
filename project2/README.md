@@ -26,11 +26,12 @@ project2/
 │   ├── streamlit_app.py        
 │   └── requirements.txt        
 ├── requirements.txt            
+├── run_pipeline.py
 ├── Documentation.md            
 └── README.md
 ```
 
-The scripts in `src/` are the main, reproducible project code. The notebook is the record of the pipeline being run and tested in Colab, with its outputs visible.
+The scripts in `src/` are the main, reproducible project code. The notebook is the record of the pipeline being run and tested in Colab, with its outputs visible. `run_pipeline.py` executes all stages sequentially.
 
 ## How it works
 
@@ -51,7 +52,10 @@ cd abilaschVijikaran/project2
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the pipeline in order
+# Run all stages at once
+python run_pipeline.py
+
+# Or run individual stages
 python src/data_processing.py      
 python src/feature_creation.py     
 python src/model.py                
@@ -103,5 +107,5 @@ If a session disconnects, the first cell of section 4 reloads the saved embeddin
 ## Performance
 
 - Test case (T-shirt): Similarity scores 0.899–0.913
-- Target threshold: 0.7
+- Target threshold: 0.7 
 - Model performs well on visual similarity matching
