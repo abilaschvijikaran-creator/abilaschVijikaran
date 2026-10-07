@@ -40,27 +40,22 @@ The endpoint checks the request in four stages, each with its own message:
 
 # Repository structure
 abilaschVijikaran/
-|- src/
-||- api.py
-||- train_model.py
-||- Data_cleaner.py
-||- evaluate_model.py
-||- xml_parser.py
-||- verify_data.py
-|- data/
-||- raw/
-|||- ecgen-radiology/
-||||- (raw XML files from Indiana University Chest X-ray collection)
-|- processed/
-||- findings_impressions.csv
-||- train.csv
-||- test.csv
-||- val.csv
-|- models/
-||- medical_summarizer
-|- requirements.txt
-|- Dockerfile
-
+├── src/
+│   ├── api.py
+│   ├── train_model.py
+│   ├── Data_cleaner.py
+│   ├── evaluate_model.py
+│   ├── xml_parser.py
+│   ├── verify_data.py
+│   └── templates/
+│       └── index.html  
+├── data/
+├── models/
+├── requirements.txt
+├── Dockerfile
+├── .gitignore
+├── .gitattributes
+└── README.md
 
 # Setup
 
