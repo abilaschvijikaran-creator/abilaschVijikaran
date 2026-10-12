@@ -12,26 +12,29 @@ Upload a photo of a piece of clothing and get back the 5 most visually similar p
 
 ## Project structure
 
+This repository holds two projects: `project/` is Project 1 (medical text summarisation) and `project2/` is this project.
+
 ```
 project2/
 ├── notebooks/
-│   └── project2.ipynb
+│   └── project2.ipynb         
 ├── src/
-│   ├── config.py          
-│   ├── data_processing.py      
-│   ├── feature_creation.py     
+│   ├── config.py              
+│   ├── data_processing.py     
+│   ├── feature_creation.py    
 │   ├── model.py               
-│   └── recommend.py            
+│   └── recommend.py           
 ├── clothing-recommender/
-│   ├── streamlit_app.py        
-│   └── requirements.txt        
-├── requirements.txt            
-├── run_pipeline.py
-├── Documentation.md            
+│   ├── streamlit_app.py       
+│   └── requirements.txt       
+├── requirements.txt           
+├── run_pipeline.py            
+├── sample_output.png          
+├── Documentation.md           
 └── README.md
 ```
 
-The scripts in `src/` are the main, reproducible project code. The notebook is the record of the pipeline being run and tested in Colab, with its outputs visible. `run_pipeline.py` executes all stages sequentially.
+The scripts in `src/` are the main, reproducible project code. The notebook is the record of the pipeline being run and tested in Colab, with its outputs visible. `run_pipeline.py` runs all four stages in order.
 
 ## How it works
 
@@ -40,53 +43,66 @@ The scripts in `src/` are the main, reproducible project code. The notebook is t
 3. **Model:** a pre-trained ResNet50 with its final layer removed turns each image into a 2,048-number embedding. All catalogue embeddings are saved once.
 4. **Recommendation:** an input image is embedded the same way and compared with every saved embedding using cosine similarity. The 5 highest scores are returned.
 
-## Quick Start (Local Machine)
+## How to reproduce it
 
-To run the pipeline locally:
+All data paths come from `PROJECT_DIR` in `src/config.py`. By default this is the Google Drive folder `/content/drive/MyDrive/project2`. The raw images must be in `PROJECT_DIR/data/images` before the pipeline runs.
 
-```bash
-# Clone and navigate
-git clone https://github.com/abilaschvijikaran-creator/abilaschVijikaran.git
-cd abilaschVijikaran/project2
+### Option 1: Google Colab (recommended)
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Run all stages at once
-python run_pipeline.py
-
-# Or run individual stages
-python src/data_processing.py      
-python src/feature_creation.py     
-python src/model.py                
-python src/recommend.py photo.jpg
-```
-
-## How to Reproduce (Full Setup)
-
-The scripts read and write to a local or cloud folder. By default, they use Google Drive (`/content/drive/MyDrive/project2`). To use a different location, change `PROJECT_DIR` in `src/config.py`.
-
-### Option 1: Google Colab (Original method)
-
-1. Open a new Colab notebook, preferably with a GPU runtime.
-2. Mount Google Drive and download the dataset into `MyDrive/project2/data` (the first cells of `notebooks/project2.ipynb` do this with `kagglehub`).
-3. Clone this repository and install dependencies:
+1. Open a new Colab notebook, preferably with a GPU runtime (Runtime > Change runtime type).
+2. Mount Google Drive:
+   ```python
+   from google.colab import drive
+   drive.mount("/content/drive")
+   ```
+3. Download the [Vibrent Clothes Rental dataset](https://www.kaggle.com/datasets/kaborg15/vibrent-clothes-rental-dataset) and copy it to Drive (about 6 GB):
+   ```python
+   import kagglehub, shutil
+   path = kagglehub.dataset_download("kaborg15/vibrent-clothes-rental-dataset")
+   shutil.copytree(path, "/content/drive/MyDrive/project2/data", dirs_exist_ok=True)
+   ```
+4. Clone this repository and install the packages:
    ```
    !git clone https://github.com/abilaschvijikaran-creator/abilaschVijikaran.git
    %cd abilaschVijikaran/project2
    !pip install -r requirements.txt
    ```
-4. Run the pipeline scripts as shown above, or open `notebooks/project2.ipynb` in Colab and run the cells from top to bottom.
+5. Run the full pipeline:
+   ```
+   !python run_pipeline.py
+   ```
 
-If a session disconnects, the first cell of section 4 reloads the saved embeddings from Drive, so sections 1 to 3 don't need to run again.
+To follow the same steps with explanations and outputs, open `notebooks/project2.ipynb` in Colab and run the cells from top to bottom. If a session disconnects, the first cell of section 4 reloads the saved embeddings from Drive, so sections 1 to 3 don't need to run again.
 
-### Option 2: Local Machine
+### Option 2: Local machine
 
-1. Clone the repository and navigate to the project folder.
-2. Download the Vibrent Clothes Rental dataset from [Kaggle](https://www.kaggle.com/datasets/abilaschvijikaran/vibrent-clothes-rental) and extract it to `data/images/`.
-3. Install dependencies: `pip install -r requirements.txt`
-4. Run the pipeline scripts in order (see Quick Start above).
-5. Update `PROJECT_DIR` in `src/config.py` if your data is in a different location.
+1. Clone the repository and install the packages:
+   ```bash
+   git clone https://github.com/abilaschvijikaran-creator/abilaschVijikaran.git
+   cd abilaschVijikaran/project2
+   pip install -r requirements.txt
+   ```
+2. Download the [Vibrent Clothes Rental dataset](https://www.kaggle.com/datasets/kaborg15/vibrent-clothes-rental-dataset) and extract it so the images are in `project2/data/images`.
+3. In `src/config.py`, change `PROJECT_DIR` to the full path of your `project2` folder.
+4. Run the full pipeline:
+   ```bash
+   python run_pipeline.py
+   ```
+
+### Running the pipeline
+
+`python run_pipeline.py` runs the four stages in order and stops if one fails. Stage 4 tests with the first cleaned catalogue image. To test with your own photo instead, run `python run_pipeline.py path/to/photo.jpg`.
+
+Each stage can also be run on its own:
+
+```bash
+python src/data_processing.py       # cleans the images and prints what was removed
+python src/feature_creation.py      # checks the transform on one image
+python src/model.py                 # creates and saves the 23,023 embeddings
+python src/recommend.py photo.jpg   # prints the top 5 matches and saves sample_output.png
+```
+
+Creating the embeddings (stage 3) is the slowest step, especially without a GPU.
 
 ## Technical Specifications
 
@@ -96,7 +112,7 @@ If a session disconnects, the first cell of section 4 reloads the saved embeddin
 - **Similarity metric**: Cosine similarity
 - **Catalogue size**: 23,023 images
 - **Recommendations returned**: Top 5
-- **Data source**: Vibrent Clothes Rental (Kaggle)
+- **Data source**: [Vibrent Clothes Rental (Kaggle)](https://www.kaggle.com/datasets/kaborg15/vibrent-clothes-rental-dataset)
 
 ## How the App is Deployed
 
@@ -106,6 +122,6 @@ If a session disconnects, the first cell of section 4 reloads the saved embeddin
 
 ## Performance
 
-- Test case (T-shirt): Similarity scores 0.899–0.913
-- Target threshold: 0.7 
-- Model performs well on visual similarity matching
+- Test case (T-shirt): similarity scores 0.899–0.913 (see `sample_output.png`)
+- Target threshold: 0.7
+- Only one test image was scored in detail, so this shows the system works rather than being a full evaluation.
