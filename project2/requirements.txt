@@ -1,6 +1,7 @@
-torch
-torchvision
-numpy
-pandas
-Pillow
-matplotlib
+torch>=2.2.0
+torchvision>=0.17.0
+numpy>=1.24
+pandas>=2.0
+Pillow>=10.0
+matplotlib>=3.7
+kagglehub>=0.3.0
