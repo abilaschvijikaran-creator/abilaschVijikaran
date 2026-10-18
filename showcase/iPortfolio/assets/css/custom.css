@@ -1,0 +1,210 @@
+/*--------------------------------------------------------------
+# Custom styles for Abilasch Vijikaran's portfolio
+# Loaded after main.css; uses the template's colour variables.
+--------------------------------------------------------------*/
+
+/* ---------- CV download button ---------- */
+.btn-cv {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 10px 28px;
+  border-radius: 50px;
+  background: var(--accent-color, #149ddd);
+  color: var(--contrast-color, #fff);
+  font-weight: 500;
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+.btn-cv:hover {
+  background: color-mix(in srgb, var(--accent-color, #149ddd), transparent 20%);
+  color: var(--contrast-color, #fff);
+}
+
+/* ---------- Skills: responsive grid of official logos ---------- */
+.logo-card {
+  height: 100%;
+  background: var(--surface-color, #fff);
+  border-radius: 12px;
+  padding: 18px 8px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.logo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.logo-card img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.logo-card span {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--heading-color, #050d18);
+}
+
+/* ---------- Curriculum Vitae timeline ---------- */
+.cv .cv-title {
+  color: var(--heading-color, #050d18);
+  font-size: 26px;
+  font-weight: 700;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.cv .cv-item {
+  padding: 0 0 20px 20px;
+  margin-top: -2px;
+  border-left: 2px solid var(--accent-color, #149ddd);
+  position: relative;
+}
+
+.cv .cv-item h4 {
+  line-height: 18px;
+  font-size: 18px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--default-color, #272829), transparent 20%);
+  margin-bottom: 10px;
+}
+
+.cv .cv-item h5 {
+  font-size: 16px;
+  padding: 5px 15px;
+  display: inline-block;
+  font-weight: 600;
+  margin-bottom: 10px;
+  background: color-mix(in srgb, var(--default-color, #272829), transparent 92%);
+}
+
+.cv .cv-item ul {
+  padding-left: 20px;
+}
+
+.cv .cv-item ul li {
+  padding-bottom: 10px;
+}
+
+.cv .cv-item:last-child {
+  padding-bottom: 0;
+}
+
+.cv .cv-item::before {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50px;
+  left: -9px;
+  top: 0;
+  background: var(--background-color, #fff);
+  border: 2px solid var(--accent-color, #149ddd);
+}
+
+/* ---------- Portfolio: evenly spread project cards ---------- */
+.project-card {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--surface-color, #fff);
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.project-card:hover,
+.project-card:focus-visible {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.14);
+  outline: none;
+}
+
+.project-card img {
+  width: 100%;
+  max-width: 180px;
+  aspect-ratio: 1 / 2;
+  object-fit: contain;
+}
+
+.project-card span {
+  font-family: var(--heading-font, "Raleway", sans-serif);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--heading-color, #050d18);
+}
+
+/* ---------- Project modals ---------- */
+.project-modal .modal-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--heading-color, #050d18);
+}
+
+.project-modal .modal-shot {
+  width: 100%;
+  max-width: 220px;
+}
+
+.project-modal h4 {
+  font-size: 17px;
+  font-weight: 700;
+  margin-top: 18px;
+}
+
+.stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stack span {
+  background: color-mix(in srgb, var(--accent-color, #149ddd), transparent 88%);
+  color: var(--accent-color, #149ddd);
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ---------- Live demo button inside modals ---------- */
+.project-modal .btn-live {
+  margin-top: 18px;
+  padding: 8px 22px;
+  font-size: 15px;
+}
+
+.project-modal .modal-body ul {
+  padding-left: 18px;
+  margin-bottom: 0;
+}
+
+/* ---------- Portfolio grid: equal-height phone screenshots ---------- */
+.portfolio .portfolio-content img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: top;
+}
+
+/* CV download button sits under the section intro */
+.section-title .btn-cv {
+  margin-top: 18px;
+}
